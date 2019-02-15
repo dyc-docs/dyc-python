@@ -1,17 +1,19 @@
 import click
+from .parser import Config
+from .main import DYC
 
+config = click.make_pass_decorator(Config, ensure=True)
 
 @click.group()
-def main():
-    print('Passing Here first')
+@config
+def main(config):
+    config.read_config()
     pass
 
 @main.command()
-@click.option("--count", default=1, help="Number of greetings.")
-def test(count):
+@click.argument('input', type=click.File('r'), required=False, default=None)
+@config
+def start(config, input):
     """Simple program that greets NAME for a total of COUNT times."""
-    print('Then Here')
-    # MARKER = '# Everything below is ignored\n'
-    # message = click.edit('\n\n' + MARKER)
-    # if message is not None:
-    #     return message.split(MARKER, 1)[0].rstrip('\n')
+    dyc = DYC(config.options)
+    dyc.start()

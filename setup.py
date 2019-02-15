@@ -7,6 +7,7 @@ setup(
     py_modules=['dyc'],
     install_requires=[
         'click==7.0',
+        'pyyaml'
         ],
     entry_points = {
         'console_scripts': ['dyc=dyc.dyc:main'],
