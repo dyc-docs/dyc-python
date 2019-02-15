@@ -1,10 +1,17 @@
 import click
 
-@click.command()
+
+@click.group()
+def main():
+    print('Passing Here first')
+    pass
+
+@main.command()
 @click.option("--count", default=1, help="Number of greetings.")
-@click.option("--name", prompt="Your name",
-              help="The person to greet.")
-def main(count, name):
+def test(count):
     """Simple program that greets NAME for a total of COUNT times."""
-    for _ in range(count):
-        click.echo("Hello, %s!" % name)
+    print('Then Here')
+    # MARKER = '# Everything below is ignored\n'
+    # message = click.edit('\n\n' + MARKER)
+    # if message is not None:
+    #     return message.split(MARKER, 1)[0].rstrip('\n')
