@@ -1,6 +1,7 @@
 """
 Reusable methods throughout DYC
 """
+import yaml
 
 def get_leading_whitespace(s): 
     accumulator = [] 
@@ -10,3 +11,13 @@ def get_leading_whitespace(s):
         else: 
             break 
     return ''.join(accumulator) 
+
+def read_config(path):
+    try:
+        with open(path, 'r') as config:
+            try:
+                yield yaml.load(config)
+            except yaml.YAMLError as exc:
+                print(exc)
+    except IOError as io_err:
+        print('Configuration File missing, using default')

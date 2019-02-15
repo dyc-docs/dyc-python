@@ -11,6 +11,7 @@ import string
 import fileinput
 import linecache
 import click
+from formats import DefaultConfig
 from .utils import get_leading_whitespace
 
 class DYC(object):
@@ -30,17 +31,21 @@ class DYC(object):
         self.details = files.details
 
     def prompts(self):
-        for filename, details in self.details.iteritems():
-            for method_name, method in details.methods.iteritems():
-                method.prompts()
-                method.confirm()
+    	for method_name, method in self._method_generator():
+        	method.process()
 
     def apply(self):
-        pass
+    	for method_name, method in self._method_generator():
+            docs = DocBuilder(method, self.options)
+            docs.build()
 
     def revert(self):
         pass
 
+    def _method_generator(self):
+        for filename, details in self.details.iteritems():
+            for method_name, method in details.methods.iteritems():
+                yield method_name, method
 
 class FilesReader(object):
 
@@ -88,31 +93,14 @@ class MethodDetails(object):
         args = ArgumentDetails(line)
         self.arguments = args.get_args()
         self.name = self.get_method_name()
-        self._method_docstring = None
+        self.docs = dict(main='', args=dict())
 
     def get_method_name(self):
         clear_defs = re.sub('def', '', self.line.strip())
         return re.sub(r'\([^)]*\)\:', '', clear_defs).strip()
 
-    def confirm(self):
-        self._concatenate_documentation()
-        # MARKER = '# Everything below is ignored\n'
-        # message = click.edit('\n\n' + MARKER)
-        # if message is not None:
-        #     return message.split(MARKER, 1)[0].rstrip('\n')
-
-    def _concatenate_documentation(self):
-        ## TODO ADD A Class that takes method docstring options.
-        ## And builds the ideal documentation for us
-        quote_strings_start = '{}'.format('"""') # Flexible type, single or double
-        quote_strings_end = '{}'.format('"""') # Flexible type, single or double
-        leading_space = get_leading_whitespace(self.line)
-        full_method_docstrings = '{leading_space}{start_string}{method_docstring}\n{argument_docstring}'.format
-        print(full_method_docstrings(leading_space=leading_space,
-                                     start_string=quote_strings_start,
-                                     method_docstring=self._method_docstring,
-                                     argument_docstring=self._arg_docstring,
-                                     end_string=quote_strings_end))
+    def process(self):
+        self.prompts()
 
     def prompts(self):
         echo_name = click.style(self.name, fg='green')
@@ -123,16 +111,15 @@ class MethodDetails(object):
         self._prompt_args()
 
     def _prompt_method(self, echo_name):
-        self._method_docstring = click.prompt('({}) Method docstring '.format(echo_name))
+        self.docs['main'] = click.prompt('\n({}) Method docstring '.format(echo_name))
 
     def _prompt_args(self):
         def _echo_arg_style(argument):
             return click.style('{}'.format(argument), fg='green')
-        self._arg_docstring = dict()
         for arg in self.arguments:
-            arg_type = click.prompt('({}) Argument type '.format(_echo_arg_style(arg)))
+            arg_type = click.prompt('\n({}) Argument type '.format(_echo_arg_style(arg)))
             arg_doc = click.prompt('({}) Argument docstring '.format(_echo_arg_style(arg)))
-            self._arg_docstring[arg] = dict(type=arg_type, doc=arg_doc)
+            self.docs['args'] = dict(type=arg_type, doc=arg_doc)
 
 
     def _read_method(self):
@@ -161,7 +148,28 @@ class ArgumentDetails(object):
 
     def get_args(self):
         args = self.line[self.line.find("(")+1:self.line.find(")")].split(', ')
-        return [arg.strip() for arg in args]
+        return filter(None, [arg.strip() for arg in args])
 
 class ClassDetails(object):
     pass
+
+
+class DocBuilder(object):
+    def __init__(self, method, options):
+        self.method = method
+        self.default_config = DefaultConfig(self.method.filename)
+        self.options = options
+
+    def confirm(self):
+        pass
+
+    def _build(self):
+        pass
+
+    def build(self):
+        self._build()
+        self.confirm()
+# MARKER = '# Everything below is ignored\n'
+# message = click.edit('\n\n' + MARKER)
+# if message is not None:
+#     return message.split(MARKER, 1)[0].rstrip('\n')

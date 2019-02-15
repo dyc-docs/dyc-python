@@ -7,7 +7,7 @@ config = click.make_pass_decorator(Config, ensure=True)
 @click.group()
 @config
 def main(config):
-    config.read_config()
+    config.read()
     pass
 
 @main.command()

@@ -13,6 +13,7 @@ It parses all the configs to be consumed in DYC.
 import yaml
 import os
 
+from .utils import read_config
 from .exceptions import ConfigurationMissing
 
 ROOT_PATH = os.getcwd()
@@ -24,16 +25,9 @@ class Config(object):
         self.name = 'dyc.yaml'
         self.set_config_path(self.name)
 
-    def read_config(self):
-    	try:
-            with open(self.config_path, 'r') as config:
-                try:
-                    self.options = yaml.load(config)
-                    self._attach_files_to_read()
-                except yaml.YAMLError as exc:
-                    print(exc)
-        except IOError as io_err:
-            print('Configuration File missing, using default')
+    def read(self):
+        self.options = next(read_config(self.config_path))
+        self._attach_files_to_read()
 
     def set_config_path(self, name):
         self.config_path = '{}/{}'.format(ROOT_PATH, name) # Default file name
