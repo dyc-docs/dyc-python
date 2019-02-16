@@ -1,0 +1,19 @@
+- 
+  extension: 'py'
+  method:
+    open: '"""'
+    close: '"""'
+    break_after_open: True
+    break_before_close: True
+    max_per_line: 70
+    within_scope: true
+    params:
+      title: 'Parameters'
+      underlined: true
+      add_type: true
+      inline: false
+  class: false
+- 
+  extension: 'js'
+  method: false
+  class: false

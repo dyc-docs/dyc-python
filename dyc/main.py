@@ -11,8 +11,8 @@ import string
 import fileinput
 import linecache
 import click
-from formats import DefaultConfig
-from .utils import get_leading_whitespace
+from formats import DefaultConfig, ExtensionManager
+from .utils import get_leading_whitespace, BlankFormatter
 
 class DYC(object):
 
@@ -36,7 +36,7 @@ class DYC(object):
 
     def apply(self):
     	for method_name, method in self._method_generator():
-            docs = DocBuilder(method, self.options)
+            docs = MethodDocBuilder(method, self.options)
             docs.build()
 
     def revert(self):
@@ -154,21 +154,50 @@ class ClassDetails(object):
     pass
 
 
-class DocBuilder(object):
+class MethodDocBuilder(object):
     def __init__(self, method, options):
         self.method = method
-        self.default_config = DefaultConfig(self.method.filename)
         self.options = options
+        self.default = DefaultConfig(self.method.filename)
+        self.formatting = MethodFormatter(self.default.config.get('extension'), self.default.config.get('method'), self.options)
 
     def confirm(self):
         pass
 
     def _build(self):
-        pass
+        print('=====')
+        print(self.formatting.run())
+        print('=====')
 
     def build(self):
         self._build()
         self.confirm()
+
+class MethodFormatter(object):
+
+    def __init__(self, extension, default_config, options):
+        self.format = default_config
+        self.options = options
+        self.extension = extension
+        self.override()
+        # self.params = self.default_config.get('params')
+        # if self.default_config.get('break'):
+        #     self.default_config['break'] = '\n'
+        # if self.params and self.params.get('title'):
+        #     title = self.params.get('title')
+        #     underline = '-' * len(self.params.get('title'))
+        #     self.default_config['params_title'] = '{}\n{}'.format(title, underline)
+
+    def override(self):
+        # Overrides custom formatting
+        custom = ExtensionManager.get_format_extension(self.extension, self.options.get('formats') or [])
+        self.format.update(**custom.get('method'))
+
+    def run(self):
+        fmt = BlankFormatter()
+        return fmt.format('{open}{break}{docstring}{break}{params_title}{arguments}{break}{close}', **self.format)
+
+    
 # MARKER = '# Everything below is ignored\n'
 # message = click.edit('\n\n' + MARKER)
 # if message is not None:
