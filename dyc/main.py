@@ -204,6 +204,7 @@ class MethodDocBuilder(object):
             method_split.insert(1, polished)
         else:
             method_split.insert(0, polished)
+
         result = '\n'.join(method_split)
         message = click.edit('## CONFIRM: MODIFY DOCSTRING BETWEEN START AND END LINES ONLY\n\n' + result)
         if not message:
@@ -245,13 +246,19 @@ class MethodFormatter(object):
         self.options = options
         self.result = ''
 
-    def prerun(self):
-        if self.format.get('break_after_open'):
-            self.format['break_after_open'] = '\n'
-        if self.format.get('break_before_close'):
-            self.format['break_before_close'] = '\n'
-        if self.format.get('break_after_docstring'):
-            self.format['break_after_docstring'] = '\n'
+    def breaks(self):
+        break_after_open = self.format.get('break_after_open')
+        self.format['break_after_open'] = '\n' if break_after_open else ''
+
+        break_before_close = self.format.get('break_before_close')
+        self.format['break_before_close'] = '\n' if break_before_close else ''
+
+        break_after_docstring = self.format.get('break_after_docstring')
+        self.format['break_after_docstring'] = '\n' if break_after_docstring else ''
+
+        # Side effects
+        if not self.format.get('arguments') and break_before_close and break_after_docstring:
+            self.format['break_before_close'] = ''
 
     def build_arguments(self, method_doc):
         arguments = self.format.get('arguments')
@@ -273,13 +280,20 @@ class MethodFormatter(object):
                 arg['break_after'] = '\n' if not last else ''
                 arg['break'] = '\n' if arguments.get('inline') == False else ''
                 arg['leading_space'] = '    '
-                result = fmt.format('{name} : {type}{break}{leading_space}{doc}{break_after}', **arg)
+                arg['prefix'] = arguments.get('prefix')
+                result = fmt.format('{prefix} {name} : {type}{break}{leading_space}{doc}{break_after}', **arg)
                 self.format['arguments'] += result
         else:
             self.format['arguments'] = ''
 
     def build_docstrings(self, method_doc):
-        self.format['docstring'] = method_doc.get('main', 'No Docstring!')
+        text = method_doc.get('main', 'No Docstring!')
+        words = text.split()
+        subs = []
+        n = self.format.get('words_per_line')
+        for i in range(0, len(words), n):
+            subs.append(" ".join(words[i:i+n]))
+        self.format['docstring'] = '\n'.join(subs)
 
     def add_indentation(self):
         temp = self.result.split('\n')
@@ -287,9 +301,9 @@ class MethodFormatter(object):
         self.result = '\n'.join([space + docline for docline in temp])
 
     def run(self, method_doc):
-        self.prerun()
         self.build_docstrings(method_doc)
         self.build_arguments(method_doc)
+        self.breaks()
         fmt = BlankFormatter()
         self.result = fmt.format('{open}{break_after_open}{docstring}{break_after_docstring}{arguments_title}{arguments}{break_before_close}{close}', **self.format)
         self.add_indentation()

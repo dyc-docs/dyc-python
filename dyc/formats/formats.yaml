@@ -10,25 +10,48 @@
     convention: 'def'
     enabled: true
     indent: 'tab'
+    indent_content: 'tab'
     open: '"""'
     close: '"""'
     break_after_open: true
     break_after_docstring: true
     break_before_close: true
-    max_per_line: 70
+    words_per_line: 10
     within_scope: true
     arguments:
       title: 'Parameters'
       underline: true
       add_type: true
       inline: false
-    return:
-      title: 'Returns'
-      underline: true
-      inline: false
+      prefix: 'param'
   class:
     convention: 'class'
 - 
   extension: 'js'
-  method: false
-  class: false
+  top:
+    enabled: true
+    open: '/*'
+    close: '*/'
+    break_after_open: true
+    break_before_close: true
+    indent_content: '2 spaces'
+  method:
+    convention: 'function'
+    enabled: true
+    indent: false
+    indent_content: '2 spaces'
+    open: '/*'
+    close: '*/'
+    break_after_open: true
+    break_before_close: true
+    break_after_docstring: false
+    words_per_line: 10
+    within_scope: false
+    arguments:
+      title: ''
+      underline: false
+      add_type: true
+      inline: true
+      prefix: '@param'
+  class:
+    convention: 'class'
