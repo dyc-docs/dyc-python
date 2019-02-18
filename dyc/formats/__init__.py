@@ -11,7 +11,7 @@ class ExtensionManager(object):
         if len(result):
         	return result[0]
         else:
-        	return []
+        	return dict()
 
 class DefaultConfig(object):
     def __init__(self, filename):

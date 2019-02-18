@@ -33,3 +33,29 @@ class BlankFormatter(string.Formatter):
         else:
             return string.Formatter.get_value(key, args, kwds)
 
+
+def get_indent(space):
+    if space == 'tab':
+        return '\t'
+    elif space == '2 spaces':
+        return '  '
+    elif space == False:
+        return ''
+    else:
+        return '    '
+
+
+def add_start_end(string):
+    leading_space = get_leading_whitespace(string)
+    start = '{}## START\n'.format(leading_space)
+    end = '\n{}## END'.format(leading_space)
+    string.split('\n')
+    result = start + string + end
+    return result
+
+
+def get_file_lines(name):
+    lines = 0
+    with open(name, 'r') as stream:
+        lines = len(stream.readlines())
+    return lines

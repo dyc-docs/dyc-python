@@ -1,18 +1,33 @@
 - 
   extension: 'py'
-  method:
+  top:
+    enabled: true
     open: '"""'
     close: '"""'
-    break_after_open: True
-    break_before_close: True
+    break_after_open: true
+    break_before_close: true
+  method:
+    convention: 'def'
+    enabled: true
+    indent: 'tab'
+    open: '"""'
+    close: '"""'
+    break_after_open: true
+    break_after_docstring: true
+    break_before_close: true
     max_per_line: 70
     within_scope: true
-    params:
+    arguments:
       title: 'Parameters'
-      underlined: true
+      underline: true
       add_type: true
       inline: false
-  class: false
+    return:
+      title: 'Returns'
+      underline: true
+      inline: false
+  class:
+    convention: 'class'
 - 
   extension: 'js'
   method: false

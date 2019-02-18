@@ -12,13 +12,15 @@ import fileinput
 import linecache
 import click
 from formats import DefaultConfig, ExtensionManager
-from .utils import get_leading_whitespace, BlankFormatter
+from .utils import get_leading_whitespace, BlankFormatter, get_indent, add_start_end, get_file_lines
+from .exceptions import QuitConfirmEditor
 
 class DYC(object):
 
     def __init__(self, options):
         self.options = options
         self.details = None
+        self.result = []
 
     def start(self):
         self.setup()
@@ -32,12 +34,23 @@ class DYC(object):
 
     def prompts(self):
     	for method_name, method in self._method_generator():
-        	method.process()
-
-    def apply(self):
-    	for method_name, method in self._method_generator():
+            method.process()
             docs = MethodDocBuilder(method, self.options)
             docs.build()
+            self.result.append(docs)
+            self.result = sorted(self.result, key= lambda x: x.method.start, reverse=True)
+
+    def apply(self):
+        for doc in self.result:
+            within_scope = doc.method.format.config.get('method', {}).get('within_scope')
+            for line in fileinput.input(doc.method.filename, inplace=True):
+                if fileinput.lineno() == doc.method.start:
+                    if within_scope:
+                        sys.stdout.write(line + doc.wrapped + '\n')
+                    else:
+                        sys.stdout.write(doc.wrapped + '\n' + line)
+                else:
+                    sys.stdout.write(line)
 
     def revert(self):
         pass
@@ -57,16 +70,33 @@ class FilesReader(object):
         changes = dict()
         for line in fileinput.input(self.list):
             filename = fileinput.filename()
+            lineno = fileinput.lineno()
+            default = DefaultConfig(fileinput.filename())
+            method_conv = default.config.get('method', {}).get('convention')
+            class_conv = default.config.get('class', {}).get('convention')
 
             if not changes.get(fileinput.filename()):
                 changes[filename] = FileDetails(filename)
 
-            if line.strip().startswith('def'):
-                length = changes[filename].get_file_lines()
-                method = MethodDetails(fileinput.filename(), fileinput.lineno(), line, length)
-                changes[filename].add_method(method)
+            if line.strip().startswith(method_conv):
+                length = get_file_lines(filename)
+                method = MethodDetails(filename, lineno, line, length)
+                if not self.is_first_line_documented(method, default.config):
+                    changes[filename].add_method(method)
 
         return changes
+
+    def is_first_line_documented(self, method, cnf):
+        lineno = fileinput.lineno()
+        filename = fileinput.filename()
+        result = False
+        for x in range(method.start, method.end):
+            line = linecache.getline(method.filename, x)
+            if cnf.get('method', {}).get('open') in line:
+                result = True
+                break
+        return result
+
 
 class FileDetails(object):
     def __init__(self, name):
@@ -76,24 +106,24 @@ class FileDetails(object):
     def add_method(self, method):
         self.methods[method.name] = method
 
-    def get_file_lines(self):
-        lines = 0
-        with open(self.name, 'r') as stream:
-            lines = len(stream.readlines())
-        return lines
-
 class MethodDetails(object):
     def __init__(self, filename, start, line, file_length):
         self.filename = filename
         self.start = start
         self.line = line
         self.end = None
+        self.format = DefaultConfig(self.filename)
         self.file_length = file_length
         self.method_string = self._read_method()
         args = ArgumentDetails(line)
         self.arguments = args.get_args()
         self.name = self.get_method_name()
-        self.docs = dict(main='', args=dict())
+        self.docs = dict(main='', args=[])
+
+    def override(self, options):
+        # Overrides custom formatting
+        custom = ExtensionManager.get_format_extension(self.format.config.get('extension'), options.get('formats') or [])
+        self.format.config.get('method').update(**custom.get('method')) if custom else None
 
     def get_method_name(self):
         clear_defs = re.sub('def', '', self.line.strip())
@@ -104,9 +134,14 @@ class MethodDetails(object):
 
     def prompts(self):
         echo_name = click.style(self.name, fg='green')
-        echo_args = click.style(', '.join(self.arguments), fg='green')
+        args = ', '.join(self.arguments).strip()
+        # click.echo(click.style('*' * 100, fg='blue'))
+        # click.echo(click.style(self.method_string, fg='blue'))
+        # click.echo(click.style('*' * 100, fg='blue'))
         click.echo('-------  Method: {} missing documentation -------'.format(echo_name))
-        click.echo('-------  Arguments: {} -------'.format(echo_args))
+        if args:
+            echo_args = click.style(', '.join(self.arguments), fg='green')
+            click.echo('-------  Arguments: {} -------'.format(echo_args))
         self._prompt_method(echo_name)
         self._prompt_args()
 
@@ -119,7 +154,7 @@ class MethodDetails(object):
         for arg in self.arguments:
             arg_type = click.prompt('\n({}) Argument type '.format(_echo_arg_style(arg)))
             arg_doc = click.prompt('({}) Argument docstring '.format(_echo_arg_style(arg)))
-            self.docs['args'] = dict(type=arg_type, doc=arg_doc)
+            self.docs['args'].append(dict(type=arg_type, doc=arg_doc, name=arg))
 
 
     def _read_method(self):
@@ -139,6 +174,10 @@ class MethodDetails(object):
             lineno = lineno + 1
             line = linecache.getline(self.filename, lineno)
             end_of_file = True if lineno > self.file_length else False
+
+        if not self.end:
+            self.end = self.file_length
+
         return method_string
 
 class ArgumentDetails(object):
@@ -150,55 +189,115 @@ class ArgumentDetails(object):
         args = self.line[self.line.find("(")+1:self.line.find(")")].split(', ')
         return filter(None, [arg.strip() for arg in args])
 
-class ClassDetails(object):
-    pass
-
-
 class MethodDocBuilder(object):
     def __init__(self, method, options):
         self.method = method
         self.options = options
-        self.default = DefaultConfig(self.method.filename)
-        self.formatting = MethodFormatter(self.default.config.get('extension'), self.default.config.get('method'), self.options)
+        self.method.override(self.options)
+        self.formatting = MethodFormatter(self.method.format.config.get('method'), self.options)
+        self.method_format = self.method.format.config.get('method')
 
-    def confirm(self):
-        pass
+    def confirm(self, polished):
+        polished = add_start_end(polished)
+        method_split = self.method.method_string.split('\n')
+        if self.method_format.get('within_scope'):
+            method_split.insert(1, polished)
+        else:
+            method_split.insert(0, polished)
+        result = '\n'.join(method_split)
+        message = click.edit('## CONFIRM: MODIFY DOCSTRING BETWEEN START AND END LINES ONLY\n\n' + result)
+        if not message:
+            raise QuitConfirmEditor('You quit the editor')
+        message = '\n'.join(message.split('\n')[2:])
+        final = []
+        start = False
+        end = False
+
+        for x in message.split('\n'):
+            stripped = x.strip()
+            if stripped == '## END':
+                end = True
+            if start and not end:
+              final.append(x)
+            if stripped == '## START':
+                start = True
+
+        self.wrapped = '\n'.join(final)
+
+    def polish(self):
+        result = self.formatting.result
+        leading_space = get_leading_whitespace(self.method.line)
+        docstring = result.split('\n')
+        polished = '\n'.join([leading_space + docline for docline in docstring])
+        self.confirm(polished)
 
     def _build(self):
-        print('=====')
-        print(self.formatting.run())
-        print('=====')
+        self.formatting.run(self.method.docs)
 
     def build(self):
         self._build()
-        self.confirm()
+        self.polish()
 
 class MethodFormatter(object):
 
-    def __init__(self, extension, default_config, options):
-        self.format = default_config
+    def __init__(self, formats, options):
+        self.format = formats
         self.options = options
-        self.extension = extension
-        self.override()
-        # self.params = self.default_config.get('params')
-        # if self.default_config.get('break'):
-        #     self.default_config['break'] = '\n'
-        # if self.params and self.params.get('title'):
-        #     title = self.params.get('title')
-        #     underline = '-' * len(self.params.get('title'))
-        #     self.default_config['params_title'] = '{}\n{}'.format(title, underline)
+        self.result = ''
 
-    def override(self):
-        # Overrides custom formatting
-        custom = ExtensionManager.get_format_extension(self.extension, self.options.get('formats') or [])
-        self.format.update(**custom.get('method'))
+    def prerun(self):
+        if self.format.get('break_after_open'):
+            self.format['break_after_open'] = '\n'
+        if self.format.get('break_before_close'):
+            self.format['break_before_close'] = '\n'
+        if self.format.get('break_after_docstring'):
+            self.format['break_after_docstring'] = '\n'
 
-    def run(self):
+    def build_arguments(self, method_doc):
+        arguments = self.format.get('arguments')
+        args = method_doc.get('args', [])
+        if arguments and len(args):
+            title = arguments.get('title')
+            if arguments.get('underline'):
+                underline = '-' * len(title)
+                self.format['arguments_title'] = '{}\n{}'.format(title, underline)
+            else:
+                self.format['arguments_title'] = '{}'.format(title)
+
+            # Add Arguments here
+            self.format['arguments'] = '\n'
+            add_type = arguments.get('add_type')
+            for index, arg in enumerate(args):
+                fmt = BlankFormatter()
+                last = len(args) - 1 == index
+                arg['break_after'] = '\n' if not last else ''
+                arg['break'] = '\n' if arguments.get('inline') == False else ''
+                arg['leading_space'] = '    '
+                result = fmt.format('{name} : {type}{break}{leading_space}{doc}{break_after}', **arg)
+                self.format['arguments'] += result
+        else:
+            self.format['arguments'] = ''
+
+    def build_docstrings(self, method_doc):
+        self.format['docstring'] = method_doc.get('main', 'No Docstring!')
+
+    def add_indentation(self):
+        temp = self.result.split('\n')
+        space = get_indent(self.format.get('indent'))
+        self.result = '\n'.join([space + docline for docline in temp])
+
+    def run(self, method_doc):
+        self.prerun()
+        self.build_docstrings(method_doc)
+        self.build_arguments(method_doc)
         fmt = BlankFormatter()
-        return fmt.format('{open}{break}{docstring}{break}{params_title}{arguments}{break}{close}', **self.format)
+        self.result = fmt.format('{open}{break_after_open}{docstring}{break_after_docstring}{arguments_title}{arguments}{break_before_close}{close}', **self.format)
+        self.add_indentation()
 
-    
-# MARKER = '# Everything below is ignored\n'
-# message = click.edit('\n\n' + MARKER)
-# if message is not None:
-#     return message.split(MARKER, 1)[0].rstrip('\n')
+class ClassDetails(object):
+    pass
+
+class FileManipulator(object):
+    pass
+
+

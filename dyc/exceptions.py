@@ -9,3 +9,4 @@ class SetupError(DYCError): pass
 class UndefinedPattern(DYCError): pass
 class ConfigurationMissing(Exception): pass
 class FormattingConfigurationHandler(ConfigurationMissing): pass
+class QuitConfirmEditor(DYCError): pass

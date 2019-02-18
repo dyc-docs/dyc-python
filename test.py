@@ -1,24 +1,33 @@
-def main(x, y, z):
+def main(x):
 	return x + y + z
 
 class Main(object):
-
-	def __init__(self, initialize, money=False, x='String', *args):
+	def __init__(self):
 		pass
 
-	def test_subject(self, param_1, **kwargs):
+	def test_subject(self, param_):
 		pass
 
-def nested_one(a, b, c):
-
+def nested_one():
 	def nested_two():
 		if bla:
 			ppoijdsf
 		sadfjio
 		ppoijdsfapsdf
-
-		aposidfoisjf
-		Whatever here
-		return d
-
+		return test
 	return a
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
