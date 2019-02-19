@@ -9,7 +9,7 @@
   method:
     convention: 'def'
     enabled: true
-    indent: 'tab'
+    indent: '4 spaces'
     indent_content: false
     open: '"""'
     close: '"""'
