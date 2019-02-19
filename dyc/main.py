@@ -14,18 +14,14 @@ import click
 from formats import DefaultConfig, ExtensionManager
 from .utils import get_leading_whitespace, BlankFormatter, get_indent, add_start_end, get_file_lines
 from .exceptions import QuitConfirmEditor
+from .base import Processor
 
-class DYC(object):
+class DYC(Processor):
 
     def __init__(self, options):
         self.options = options
         self.details = None
         self.result = []
-
-    def start(self):
-        self.setup()
-        self.prompts()
-        self.apply()
 
     def setup(self):
         file_candidates = self.options.get('files')
@@ -51,9 +47,6 @@ class DYC(object):
                         sys.stdout.write(doc.wrapped + '\n' + line)
                 else:
                     sys.stdout.write(line)
-
-    def revert(self):
-        pass
 
     def _method_generator(self):
         for filename, details in self.details.iteritems():
@@ -81,7 +74,9 @@ class FilesReader(object):
             if line.strip().startswith(method_conv):
                 length = get_file_lines(filename)
                 method = MethodDetails(filename, lineno, line, length)
-                if not self.is_first_line_documented(method, default.config):
+
+                if not self.is_first_line_documented(method, default.config) \
+                    and click.confirm('Do you want to document method {}?'.format(click.style(method.name, fg='blue'))):
                     changes[filename].add_method(method)
 
         return changes
@@ -106,19 +101,20 @@ class FileDetails(object):
     def add_method(self, method):
         self.methods[method.name] = method
 
+
 class MethodDetails(object):
     def __init__(self, filename, start, line, file_length):
         self.filename = filename
         self.start = start
         self.line = line
         self.end = None
+        self.docs = dict(main='', args=[])
         self.format = DefaultConfig(self.filename)
         self.file_length = file_length
         self.method_string = self._read_method()
         args = ArgumentDetails(line)
         self.arguments = args.get_args()
         self.name = self.get_method_name()
-        self.docs = dict(main='', args=[])
 
     def override(self, options):
         # Overrides custom formatting
@@ -138,7 +134,7 @@ class MethodDetails(object):
         # click.echo(click.style('*' * 100, fg='blue'))
         # click.echo(click.style(self.method_string, fg='blue'))
         # click.echo(click.style('*' * 100, fg='blue'))
-        click.echo('-------  Method: {} missing documentation -------'.format(echo_name))
+        click.echo('-------  Method: {} -------'.format(echo_name))
         if args:
             echo_args = click.style(', '.join(self.arguments), fg='green')
             click.echo('-------  Arguments: {} -------'.format(echo_args))
@@ -155,7 +151,6 @@ class MethodDetails(object):
             arg_type = click.prompt('\n({}) Argument type '.format(_echo_arg_style(arg)))
             arg_doc = click.prompt('({}) Argument docstring '.format(_echo_arg_style(arg)))
             self.docs['args'].append(dict(type=arg_type, doc=arg_doc, name=arg))
-
 
     def _read_method(self):
         start = linecache.getline(self.filename, self.start)
@@ -207,8 +202,10 @@ class MethodDocBuilder(object):
 
         result = '\n'.join(method_split)
         message = click.edit('## CONFIRM: MODIFY DOCSTRING BETWEEN START AND END LINES ONLY\n\n' + result)
+
         if not message:
             raise QuitConfirmEditor('You quit the editor')
+
         message = '\n'.join(message.split('\n')[2:])
         final = []
         start = False
@@ -298,6 +295,11 @@ class MethodFormatter(object):
     def add_indentation(self):
         temp = self.result.split('\n')
         space = get_indent(self.format.get('indent'))
+        indent_content = get_indent(self.format.get('indent_content'))
+        if indent_content:
+            content = temp[1:-1]
+            content = [indent_content + docline for docline in temp][1:-1]
+            temp[1:-1] = content
         self.result = '\n'.join([space + docline for docline in temp])
 
     def run(self, method_doc):

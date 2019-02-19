@@ -9,12 +9,6 @@ class Main(object):
 		pass
 
 def nested_one():
-	def nested_two():
-		if bla:
-			ppoijdsf
-		sadfjio
-		ppoijdsfapsdf
-		return test
 	return a
 
 
