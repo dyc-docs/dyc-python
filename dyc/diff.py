@@ -1,82 +1,85 @@
+"""
+Ideally, this file is to get the current staged
+in Git Diff, then creates a `.dyc.patch` temporary file.
+
+The file will patch will undergo the process of:
+1 - See where the `Added` lines fall in
+2 - Extract methods that fall within the added lines and dump them into `.dyc.patch`
+"""
 import os
 import git
+import ntpath
+
+class DiffParser(object):
+
+    PREFIX = 'diff --git'
+
+    def parse(self, staged=False):
+        # self.plain_diff = self.repo.git.diff('HEAD')
+        self.diffs = self.repo.index.diff('HEAD' if staged else None)
+        self.plain = self.repo.git.diff('HEAD').split('\n')
+        return self._pack()
+
+    def _pack(self):
+        patches = []
+        for diff in self.diffs:
+            sep = '{} a/{} b/{}'.format(self.PREFIX, diff.a_path, diff.b_path)
+            patch = self.__clean(self.__patch(sep), diff)
+            patches.append(patch)
+        return patches
+
+    def __patch(self, separator):
+        patch = []
+        hit = False
+        # end = False
+        for line in self.plain:
+            if line == separator:
+                hit = True
+                continue
+            elif line.startswith(self.PREFIX) and hit:
+                break
+            elif hit:
+                patch.append(line)
+        return '\n'.join(patch)
+
+    def __clean(self, patch, diff):
+        """Returns a clean dict of a path"""
+
+        result = {}
+        result['additions'] = self.__additions(patch)
+        result['hunk'] = self.__hunk(patch)
+        result['plain'] = patch
+        result['diff'] = diff
+        result['name'] = ntpath.basename(diff.a_path)
+        result['path'] = diff.a_path
+        return result
+
+    def __hunk(self, patch):
+        import re
+        pat = r'.*?\@\@(.*)\@\@.*'
+        match = re.findall(pat, patch)
+        return [m.strip() for m in match]
+
+    def __additions(self, patch):
+        dumps = []
+        s = patch.split('\n')
+        for line in s:
+            try:
+                if line[0] == '+' and not line.startswith('+++'):
+                    l = line[1:]
+                    dumps.append(l)
+            except IndexError:
+                continue
+        return '\n'.join(dumps)
 
 
-## Module Constants
-DATE_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
-EMPTY_TREE_SHA   = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+class Diff(DiffParser):
+    def __init__(self):
+        self.repo = git.Repo(os.getcwd())
 
+    @property
+    def uncommitted(self):
+        return self._uncommitted()
 
-def versions(path, branch='master'):
-    """
-    This function returns a generator which iterates through all commits of
-    the repository located in the given path for the given branch. It yields
-    file diff information to show a timeseries of file changes.
-    """
-
-    # Create the repository, raises an error if it isn't one.
-    repo = git.Repo(path)
-
-    # Iterate through every commit for the given branch in the repository
-    for commit in repo.iter_commits(branch):
-        # Determine the parent of the commit to diff against.
-        # If no parent, this is the first commit, so use empty tree.
-        # Then create a mapping of path to diff for each file changed.
-        parent = commit.parents[0] if commit.parents else EMPTY_TREE_SHA
-        diffs  = {
-            diff.a_path: diff for diff in commit.diff(parent)
-        }
-
-        # The stats on the commit is a summary of all the changes for this
-        # commit, we'll iterate through it to get the information we need.
-        for objpath, stats in commit.stats.files.items():
-
-            # Select the diff for the path in the stats
-            diff = diffs.get(objpath)
-
-            # If the path is not in the dictionary, it's because it was
-            # renamed, so search through the b_paths for the current name.
-            if not diff:
-                for diff in diffs.values():
-                    if diff.b_path == path and diff.renamed:
-                        break
-
-            # Update the stats with the additional information
-            stats.update({
-                'object': os.path.join(path, objpath),
-                'commit': commit.hexsha,
-                'author': commit.author.email,
-                'timestamp': commit.authored_datetime.strftime(DATE_TIME_FORMAT),
-                'size': diff_size(diff),
-                'type': diff_type(diff),
-            })
-
-            yield stats
-
-
-def diff_size(diff):
-    """
-    Computes the size of the diff by comparing the size of the blobs.
-    """
-    if diff.b_blob is None and diff.deleted_file:
-        # This is a deletion, so return negative the size of the original.
-        return diff.a_blob.size * -1
-
-    if diff.a_blob is None and diff.new_file:
-        # This is a new file, so return the size of the new value.
-        return diff.b_blob.size
-
-    # Otherwise just return the size a-b
-    return diff.a_blob.size - diff.b_blob.size
-
-
-def diff_type(diff):
-    """
-    Determines the type of the diff by looking at the diff flags.
-    """
-    if diff.renamed: return 'R'
-    if diff.deleted_file: return 'D'
-    if diff.new_file: return 'A'
-    return 'M'
-for x in versions(os.getcwd()):
-	print(x)
+    def _uncommitted(self):
+        return self.parse()
