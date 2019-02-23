@@ -59,3 +59,30 @@ def get_file_lines(name):
     with open(name, 'r') as stream:
         lines = len(stream.readlines())
     return lines
+
+
+def get_hunk(patch):
+    import re
+    pat = r'.*?\@\@(.*)\@\@.*'
+    match = re.findall(pat, patch)
+    return [m.strip() for m in match]
+
+
+def get_additions_in_first_hunk(hunk):
+    """Assuming the hunk is a group and a list"""
+    if not isinstance(hunk, list): return None, None
+    if len(hunk) < 1: return None, None
+    adds_patch = hunk[0].split('+')[-1].split(',')
+    start = int(adds_patch[0])
+    end = int(start) + int(adds_patch[1])
+    return start, end
+
+
+def line_num_for_phrase_in_file(phrase='', filename='', _range=(0, 0)):
+    start, end = _range
+    with open(filename,'r') as f:
+        for (i, line) in enumerate(f):
+            within_range = (i >= start) and (i <= end)
+            if phrase == line and within_range:
+                return i
+    return -1

@@ -32,15 +32,6 @@ def diff(config):
             diff = index.get('diff')
             name = index.get('name')
             temp_file = '.dyc.{}'.format(name)
-            # We have a temp file to get the function name from from and see where to document
-            print(index.get('name'), index.get('hunk'))
-            # with open(temp_file, 'w+') as temp:
-            #     try:
-            #         temp.write(index.get('additions'))
-            #         temp.seek(0)
-            #         config.options['files'] = [temp_file]
-            #         dyc = DYC(config.options)
-            #         dyc.start()
-            #     except:
-            #         os.remove(temp_file)
-            #         break
+            dyc = DYC.candidates(index.get('path'), index.get('additions'))
+            dyc.prompts()
+            dyc.apply()

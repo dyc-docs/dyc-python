@@ -12,15 +12,15 @@ import fileinput
 import linecache
 import click
 from formats import DefaultConfig, ExtensionManager
-from .utils import get_leading_whitespace, BlankFormatter, get_indent, add_start_end, get_file_lines
+from utils import get_leading_whitespace, BlankFormatter, get_indent, add_start_end, get_file_lines, get_hunk
 from .exceptions import QuitConfirmEditor
 from .base import Processor
 
 class DYC(Processor):
 
-    def __init__(self, options):
+    def __init__(self, options, details=None):
         self.options = options
-        self.details = None
+        self.details = details
         self.result = []
 
     def setup(self):
@@ -53,6 +53,18 @@ class DYC(Processor):
             for method_name, method in details.methods.iteritems():
                 yield method_name, method
 
+    @classmethod
+    def candidates(cls, filename, patches):
+        details = dict()
+        for change in patches:
+            patch = change.get('patch')
+            hunk = change.get('hunk')
+            details[filename] = FileDetails(filename)
+            config = DefaultConfig(filename).config
+            FilesReader.set_methods(details, hunk, filename, config)
+        return cls(config, details)
+
+
 class FilesReader(object):
 
     def __init__(self, file_list):
@@ -75,15 +87,14 @@ class FilesReader(object):
                 length = get_file_lines(filename)
                 method = MethodDetails(filename, lineno, line, length)
 
-                if not self.is_first_line_documented(method, default.config) \
-                    and click.confirm('Do you want to document method {}?'.format(click.style(method.name, fg='blue'))):
+                if not self.is_first_line_documented(method, default.config, lineno, filename) \
+                    and click.confirm('Do you want to document method {}?'.format(click.style(method.name, fg='red'))):
                     changes[filename].add_method(method)
 
         return changes
 
-    def is_first_line_documented(self, method, cnf):
-        lineno = fileinput.lineno()
-        filename = fileinput.filename()
+    @classmethod
+    def is_first_line_documented(cls, method, cnf, lineno, filename):
         result = False
         for x in range(method.start, method.end):
             line = linecache.getline(method.filename, x)
@@ -91,6 +102,22 @@ class FilesReader(object):
                 result = True
                 break
         return result
+
+    @classmethod
+    def set_methods(cls, details, hunk, filename, config):
+        if not config: return
+        start, end = hunk
+        method_conv = config.get('method', {}).get('convention')
+        with open(filename, 'r') as stream:
+            for index, line in enumerate(stream.readlines()):
+                lineno = index + 1
+                if start <= lineno <= end and line.strip().startswith(method_conv):
+                    length = get_file_lines(filename)
+                    method = MethodDetails(filename, lineno, line, length)
+
+                    if not cls.is_first_line_documented(method, config, lineno, filename) \
+                        and click.confirm('Do you want to document method {}?'.format(click.style(method.name, fg='red'))):
+                        details[filename].add_method(method)
 
 
 class FileDetails(object):
@@ -131,9 +158,6 @@ class MethodDetails(object):
     def prompts(self):
         echo_name = click.style(self.name, fg='green')
         args = ', '.join(self.arguments).strip()
-        # click.echo(click.style('*' * 100, fg='blue'))
-        # click.echo(click.style(self.method_string, fg='blue'))
-        # click.echo(click.style('*' * 100, fg='blue'))
         click.echo('-------  Method: {} -------'.format(echo_name))
         if args:
             echo_args = click.style(', '.join(self.arguments), fg='green')
@@ -315,5 +339,3 @@ class ClassDetails(object):
 
 class FileManipulator(object):
     pass
-
-

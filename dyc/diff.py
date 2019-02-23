@@ -9,6 +9,8 @@ The file will patch will undergo the process of:
 import os
 import git
 import ntpath
+import linecache
+from utils import get_hunk, get_additions_in_first_hunk, line_num_for_phrase_in_file
 
 class DiffParser(object):
 
@@ -42,35 +44,56 @@ class DiffParser(object):
                 patch.append(line)
         return '\n'.join(patch)
 
+    def __pack(self, patch):
+        final = []
+        result = []
+        hit = False
+        start, end = None, None
+        for index, line in enumerate(patch):
+            _hunk = get_hunk(line)
+
+            if (len(patch) -1) == index:
+                final.append(dict(patch='\n'.join(result), hunk=(start, end)))
+
+            if len(_hunk) and not hit:
+                start, end = get_additions_in_first_hunk(get_hunk(line))
+                hit = True
+                continue
+            elif len(_hunk) and hit:
+                final.append(dict(patch='\n'.join(result), hunk=(start, end)))
+                start, end = get_additions_in_first_hunk(get_hunk(line))
+                result = []
+                hit = True
+            elif hit:
+                result.append(line)
+
+        return final
+
+
     def __clean(self, patch, diff):
         """Returns a clean dict of a path"""
-
         result = {}
-        result['additions'] = self.__additions(patch)
-        result['hunk'] = self.__hunk(patch)
+        result['additions'] = self.__additions(self.__pack(patch.split('\n')), diff.a_path) # [{hunk: (start, end), patch:}]
         result['plain'] = patch
         result['diff'] = diff
         result['name'] = ntpath.basename(diff.a_path)
         result['path'] = diff.a_path
         return result
 
-    def __hunk(self, patch):
-        import re
-        pat = r'.*?\@\@(.*)\@\@.*'
-        match = re.findall(pat, patch)
-        return [m.strip() for m in match]
-
-    def __additions(self, patch):
-        dumps = []
-        s = patch.split('\n')
-        for line in s:
-            try:
-                if line[0] == '+' and not line.startswith('+++'):
-                    l = line[1:]
-                    dumps.append(l)
-            except IndexError:
-                continue
-        return '\n'.join(dumps)
+    def __additions(self, hunks, path):
+        for hunk in hunks:
+            patch = hunk.get('patch')
+            result = []
+            for line in patch.split('\n'):
+                try:
+                    if line[0] == '+' and not line.startswith('+++'):
+                        l = line[1:]
+                        result.append(l)
+                except IndexError as e:
+                    print(e.message)
+                    continue
+            hunk['patch'] = '\n'.join(result)
+        return hunks
 
 
 class Diff(DiffParser):

@@ -23,6 +23,6 @@
       underline: true
       add_type: true
       inline: false
-      prefix: 'param'
+      prefix: ''
   class:
     convention: 'class'
