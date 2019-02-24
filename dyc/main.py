@@ -24,9 +24,7 @@ class DYC(Processor):
         self.result = []
 
     def setup(self):
-        file_candidates = self.options.get('files')
-        files = FilesReader(file_candidates)
-        self.details = files.details
+        self.details = FilesReader(self.options).details
 
     def prompts(self):
     	for method_name, method in self._method_generator():
@@ -57,18 +55,16 @@ class DYC(Processor):
     def candidates(cls, filename, patches):
         details = dict()
         for change in patches:
-            patch = change.get('patch')
-            hunk = change.get('hunk')
             details[filename] = FileDetails(filename)
             config = DefaultConfig(filename).config
-            FilesReader.set_methods(details, hunk, filename, config)
+            FilesReader.set_methods(details, change, filename, config)
         return cls(config, details)
 
 
 class FilesReader(object):
 
-    def __init__(self, file_list):
-        self.list = file_list # List of files
+    def __init__(self, options):
+        self.list = options.get('files') # List of files
 
     @property
     def details(self):
@@ -78,16 +74,17 @@ class FilesReader(object):
             lineno = fileinput.lineno()
             default = DefaultConfig(fileinput.filename())
             method_conv = default.config.get('method', {}).get('convention')
+            ignore = default.config.get('method', {}).get('ignore')
             class_conv = default.config.get('class', {}).get('convention')
-
             if not changes.get(fileinput.filename()):
                 changes[filename] = FileDetails(filename)
 
-            if line.strip().startswith(method_conv):
+            if line.strip().startswith(method_conv) and line.strip().split(' ')[0] == method_conv:
+
                 length = get_file_lines(filename)
                 method = MethodDetails(filename, lineno, line, length)
 
-                if not self.is_first_line_documented(method, default.config, lineno, filename) \
+                if method.name not in ignore and not self.is_first_line_documented(method, default.config, lineno, filename) \
                     and click.confirm('Do you want to document method {}?'.format(click.style(method.name, fg='red'))):
                     changes[filename].add_method(method)
 
@@ -104,18 +101,20 @@ class FilesReader(object):
         return result
 
     @classmethod
-    def set_methods(cls, details, hunk, filename, config):
+    def set_methods(cls, details, change, filename, config):
         if not config: return
-        start, end = hunk
+        patch = change.get('patch')
+        start, end = change.get('hunk')
         method_conv = config.get('method', {}).get('convention')
+        ignore = config.get('method', {}).get('ignore')
         with open(filename, 'r') as stream:
             for index, line in enumerate(stream.readlines()):
                 lineno = index + 1
-                if start <= lineno <= end and line.strip().startswith(method_conv):
+                if start <= lineno <= end and line.strip().startswith(method_conv) and line.strip().split(' ')[0] == method_conv:
+                    found = filter(lambda l: line.replace('\n', '') == l, patch.split('\n'))
                     length = get_file_lines(filename)
                     method = MethodDetails(filename, lineno, line, length)
-
-                    if not cls.is_first_line_documented(method, config, lineno, filename) \
+                    if method.name not in ignore and not cls.is_first_line_documented(method, config, lineno, filename) and len(found) \
                         and click.confirm('Do you want to document method {}?'.format(click.style(method.name, fg='red'))):
                         details[filename].add_method(method)
 
@@ -162,10 +161,10 @@ class MethodDetails(object):
         if args:
             echo_args = click.style(', '.join(self.arguments), fg='green')
             click.echo('-------  Arguments: {} -------'.format(echo_args))
-        self._prompt_method(echo_name)
+        self._prompt_docstring(echo_name)
         self._prompt_args()
 
-    def _prompt_method(self, echo_name):
+    def _prompt_docstring(self, echo_name):
         self.docs['main'] = click.prompt('\n({}) Method docstring '.format(echo_name))
 
     def _prompt_args(self):

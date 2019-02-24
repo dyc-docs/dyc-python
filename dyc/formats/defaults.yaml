@@ -7,6 +7,8 @@
     break_after_open: true
     break_before_close: true
   method:
+    ignore:
+      - __init__
     convention: 'def'
     enabled: true
     indent: '4 spaces'
@@ -24,5 +26,8 @@
       add_type: true
       inline: false
       prefix: ''
+      ignore:
+        - cls
+        - self
   class:
     convention: 'class'

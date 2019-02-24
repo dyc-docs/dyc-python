@@ -1,4 +1,4 @@
 top: false
 max_line_wrap: 150
 style: reST
-files: ['.']
+files: ['test-1.py']
