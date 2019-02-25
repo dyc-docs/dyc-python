@@ -82,7 +82,7 @@ class FilesReader(object):
             if line.strip().startswith(method_conv) and line.strip().split(' ')[0] == method_conv:
 
                 length = get_file_lines(filename)
-                method = MethodDetails(filename, lineno, line, length)
+                method = MethodDetails(filename, lineno, line, length, default.config)
 
                 if method.name not in ignore and not self.is_first_line_documented(method, default.config, lineno, filename) \
                     and click.confirm('Do you want to document method {}?'.format(click.style(method.name, fg='red'))):
@@ -113,7 +113,7 @@ class FilesReader(object):
                 if start <= lineno <= end and line.strip().startswith(method_conv) and line.strip().split(' ')[0] == method_conv:
                     found = filter(lambda l: line.replace('\n', '') == l, patch.split('\n'))
                     length = get_file_lines(filename)
-                    method = MethodDetails(filename, lineno, line, length)
+                    method = MethodDetails(filename, lineno, line, length, config)
                     if method.name not in ignore and not cls.is_first_line_documented(method, config, lineno, filename) and len(found) \
                         and click.confirm('Do you want to document method {}?'.format(click.style(method.name, fg='red'))):
                         details[filename].add_method(method)
@@ -129,7 +129,7 @@ class FileDetails(object):
 
 
 class MethodDetails(object):
-    def __init__(self, filename, start, line, file_length):
+    def __init__(self, filename, start, line, file_length, config):
         self.filename = filename
         self.start = start
         self.line = line
@@ -139,7 +139,7 @@ class MethodDetails(object):
         self.file_length = file_length
         self.method_string = self._read_method()
         args = ArgumentDetails(line)
-        self.arguments = args.get_args()
+        self.arguments = args.get_args(cnf=config.get('method', {}).get('arguments'))
         self.name = self.get_method_name()
 
     def override(self, options):
@@ -203,9 +203,10 @@ class ArgumentDetails(object):
     def __init__(self, line):
         self.line = line
 
-    def get_args(self):
+    def get_args(self, cnf):
+        ignore = cnf.get('ignore')
         args = self.line[self.line.find("(")+1:self.line.find(")")].split(', ')
-        return filter(None, [arg.strip() for arg in args])
+        return filter(lambda x: x not in ignore, filter(None, [arg.strip() for arg in args]))
 
 class MethodDocBuilder(object):
     def __init__(self, method, options):
