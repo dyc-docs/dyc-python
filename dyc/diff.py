@@ -11,8 +11,9 @@ import git
 import ntpath
 import linecache
 from utils import get_hunk, get_additions_in_first_hunk, line_num_for_phrase_in_file
+from base import Processor
 
-class DiffParser(object):
+class DiffParser():
 
     PREFIX = 'diff --git'
 
@@ -96,9 +97,11 @@ class DiffParser(object):
         return hunks
 
 
-class Diff(DiffParser):
-    def __init__(self):
+class Diff(DiffParser, Processor):
+    def __init__(self, config):
         self.repo = git.Repo(os.getcwd())
+        self.config = config
+        self.prepare()
 
     @property
     def uncommitted(self):

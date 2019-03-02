@@ -1,16 +1,15 @@
 import os
 import click
 import tempfile
-from .parser import Config
+from .parser import ParsedConfig
 from .main import DYC
 from diff import Diff
 
-config = click.make_pass_decorator(Config, ensure=True)
+config = click.make_pass_decorator(ParsedConfig, ensure=True)
 
 @click.group()
 @config
 def main(config):
-    config.read()
     pass
 
 @main.command()
@@ -18,20 +17,22 @@ def main(config):
 @config
 def start(config, input):
     """Simple program that greets NAME for a total of COUNT times."""
-    dyc = DYC(config.options)
-    dyc.start()
+    dyc = DYC(config.plain)
+    dyc.prepare()
+    print(dyc.file_list)
+    # dyc.start()
 
 
 @main.command()
 @config
 def diff(config):
     """This argument will run DYC on DIFF patch only"""
-    diff = Diff()
-    for index in diff.uncommitted:
-        if index.get('diff'):
-            diff = index.get('diff')
-            name = index.get('name')
-            temp_file = '.dyc.{}'.format(name)
-            dyc = DYC.candidates(index.get('path'), index.get('additions'))
-            dyc.prompts()
-            dyc.apply()
+    diff = Diff(config.plain)
+    # for index in diff.uncommitted:
+    #     if index.get('diff'):
+    #         diff = index.get('diff')
+    #         name = index.get('name')
+    #         temp_file = '.dyc.{}'.format(name)
+    #         dyc = DYC.candidates(index.get('path'), index.get('additions'))
+    #         dyc.prompts()
+    #         dyc.apply()

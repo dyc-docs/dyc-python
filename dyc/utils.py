@@ -1,8 +1,11 @@
 """
 Reusable methods throughout DYC
 """
+import os
 import yaml
 import string
+from exceptions import DYCConfigurationSetup
+
 
 def get_leading_whitespace(s): 
     accumulator = [] 
@@ -22,6 +25,16 @@ def read_config(path):
                 print(exc)
     except IOError as io_err:
         print('Configuration File missing, using default')
+
+def read_yaml(path):
+    try:
+        with open(path, 'r') as config:
+            try:
+                return yaml.load(config)
+            except yaml.YAMLError as exc:
+                return None
+    except IOError as io_err:
+        return None
 
 class BlankFormatter(string.Formatter):
     def __init__(self, default=''):
@@ -43,6 +56,18 @@ def get_indent(space):
         return ''
     else:
         return '    '
+
+def get_extension(filename):
+    return os.path.splitext(filename)[1].replace('.', '')
+
+
+def all_files_generator(extensions=[]):
+    for root, dirs, files in os.walk(os.getcwd()):
+        files = [f for f in files if not f[0] == '.']
+        dirs[:] = [d for d in dirs if not d[0] == '.']
+        if len(extensions):
+            files = [filename for filename in files if get_extension(filename) in extensions]
+        yield files
 
 
 def add_start_end(string):

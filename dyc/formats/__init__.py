@@ -21,5 +21,3 @@ class DefaultConfig(object):
             self.config = ExtensionManager.get_format_extension(extension, configs)
         except Exception as e:
             raise FormattingConfigurationHandler(e.message)
-
-     

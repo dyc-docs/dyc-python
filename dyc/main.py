@@ -16,10 +16,61 @@ from utils import get_leading_whitespace, BlankFormatter, get_indent, add_start_
 from .exceptions import QuitConfirmEditor
 from .base import Processor
 
+
+
+"""
+Fixed Classes. MethodBuilder, ClassBuilder, ArgumentBuilder
+SubClasses: Formatter
+
+Documentation has to be build in a builder design Pattern
+
+Kickoff Steps
+
+1 - Override Custom configuration set in `dyc.yaml` over `defaults` so the building process
+    is only read from one source of truth.
+
+2 - Get Files:
+    * Based on the given argument. i) If `diff`, it will read the Git Diff ONLY.
+                                   ii) If `start`, it will read only the given files in `dyc.yaml`
+
+3 - Get Configuration for each file independently
+    * Based on the file extension
+      - Determine what keywords fall into documentation. Extract the part that will be documented
+      
+4 - Prompt enduser with parts that will fall into documentation and confirm
+
+5 - Apply end result.
+
+"""
+
+# class Director():
+#     ## Set the configuration
+
+#     ## Set the files to be read
+
+# class FilesDirectory():
+
+
+
+
+# class SubDirector():
+
+#     ## Set the Configuration of each file
+
+#     ## Set the incidents to be documented
+
+
+# class DocDirector():
+
+#     ## Set incident doc format
+
+#     ## 
+
+
 class DYC(Processor):
 
-    def __init__(self, options, details=None):
-        self.options = options
+    def __init__(self, config, details=None):
+        self.config = config
         self.details = details
         self.result = []
 

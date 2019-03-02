@@ -23,14 +23,14 @@ formats:
       break_before_close: true
       words_per_line: 10
       within_scope: true
-      arguments:
-        title: 'Parameters'
-        underline: true
-        add_type: true
-        inline: false
-        prefix: ''
-        ignore:
-          - cls
-          - self
+    arguments:
+      title: 'Parameters'
+      underline: true
+      add_type: true
+      inline: false
+      prefix: ''
+      ignore:
+        - cls
+        - self
     class:
       keywords: ['class']
