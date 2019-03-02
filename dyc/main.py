@@ -12,7 +12,7 @@ import fileinput
 import linecache
 import click
 from formats import DefaultConfig, ExtensionManager
-from utils import get_leading_whitespace, BlankFormatter, get_indent, add_start_end, get_file_lines, get_hunk
+from utils import get_leading_whitespace, BlankFormatter, get_indent, add_start_end, get_file_lines, get_hunk, get_extension
 from .exceptions import QuitConfirmEditor
 from .base import Processor
 
@@ -66,6 +66,12 @@ Kickoff Steps
 
 #     ## 
 
+# class Builder(object):
+
+#     def candidates(self, file_list):
+#         for 
+
+
 
 class DYC(Processor):
 
@@ -76,6 +82,22 @@ class DYC(Processor):
 
     def setup(self):
         self.details = FilesReader(self.options).details
+
+
+    def process_methods(self):
+        # Before processing methods.
+        # We need to attach the filename along with the format.
+        # To let the MethodBuilder be focused only on getting things processed
+        # So let's prepare a tuple of filename, format here.
+        with_formats = self.get_file_with_formats()
+        MethodBuilder(with_formats).chunk()
+
+    def process_classes(self):
+        self.classes = ClassesBuilder()
+        # Should be a builder Process similar
+
+    def process_top(self):
+        self.tops = TopBuilder()
 
     def prompts(self):
     	for method_name, method in self._method_generator():

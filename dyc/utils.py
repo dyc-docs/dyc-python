@@ -63,7 +63,7 @@ def get_extension(filename):
 
 def all_files_generator(extensions=[]):
     for root, dirs, files in os.walk(os.getcwd()):
-        files = [f for f in files if not f[0] == '.']
+        files = [os.path.join(root, f) for f in files if not f[0] == '.']
         dirs[:] = [d for d in dirs if not d[0] == '.']
         if len(extensions):
             files = [filename for filename in files if get_extension(filename) in extensions]

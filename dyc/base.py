@@ -1,6 +1,7 @@
 import os
 import glob
-from utils import all_files_generator
+import fileinput
+from utils import all_files_generator, get_extension
 
 class FilesDirector():
 
@@ -10,6 +11,9 @@ class FilesDirector():
         self.set_files_to_read()
         self.apply_includes()
         self.apply_excludes()
+
+    def get_file_with_formats(self):
+		return map(lambda filename: (filename, filter(lambda fmt: (fmt.get('extension') == get_extension(filename)), self.config.get('formats'))), self.file_list)
 
     def apply_includes(self):
         pass
@@ -27,6 +31,7 @@ class FilesDirector():
             result += paths
 
         self.file_list = result
+
 
 class Processor(FilesDirector):
     """Subclass process that runs complete lifecycle for DYC"""

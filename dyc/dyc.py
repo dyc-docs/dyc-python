@@ -19,7 +19,9 @@ def start(config, input):
     """Simple program that greets NAME for a total of COUNT times."""
     dyc = DYC(config.plain)
     dyc.prepare()
-    print(dyc.file_list)
+    dyc.process_methods()
+    # dyc.process_classes()
+    # dyc.process_top()
     # dyc.start()
 
 
@@ -28,7 +30,8 @@ def start(config, input):
 def diff(config):
     """This argument will run DYC on DIFF patch only"""
     diff = Diff(config.plain)
-    # for index in diff.uncommitted:
+    for index in diff.uncommitted:
+        print(index)
     #     if index.get('diff'):
     #         diff = index.get('diff')
     #         name = index.get('name')

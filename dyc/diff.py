@@ -18,7 +18,6 @@ class DiffParser():
     PREFIX = 'diff --git'
 
     def parse(self, staged=False):
-        # self.plain_diff = self.repo.git.diff('HEAD')
         self.diffs = self.repo.index.diff('HEAD' if staged else None)
         self.plain = self.repo.git.diff('HEAD').split('\n')
         return self._pack()
@@ -26,10 +25,16 @@ class DiffParser():
     def _pack(self):
         patches = []
         for diff in self.diffs:
+            if not self.is_candidate(diff.a_path):
+                continue
             sep = '{} a/{} b/{}'.format(self.PREFIX, diff.a_path, diff.b_path)
             patch = self.__clean(self.__patch(sep), diff)
             patches.append(patch)
         return patches
+
+    def is_candidate(self, path):
+        full_path = os.path.join(os.getcwd(), path)
+        return full_path in self.file_list
 
     def __patch(self, separator):
         patch = []
