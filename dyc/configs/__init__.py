@@ -33,7 +33,7 @@ class Config(object):
                 self.plain[key] = value
 
     def override_formats(self):
-        formats = self.custom.get('formats')
+        formats = self.custom.get('formats', [])
         for index, value in enumerate(formats):
             extension = value.get('extension')
             cnf_index = self.get_custom_extension_index(extension)
@@ -55,6 +55,5 @@ class Config(object):
         return isinstance(value, list) and len(value) and isinstance(value[0], dict)
 
     def override(self):
-        print(self.custom)
         self.override_basic()
         self.override_formats()

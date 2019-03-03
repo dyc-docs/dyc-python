@@ -17,7 +17,6 @@ from .exceptions import QuitConfirmEditor
 from .base import Processor
 
 
-
 """
 Fixed Classes. MethodBuilder, ClassBuilder, ArgumentBuilder
 SubClasses: Formatter
@@ -67,14 +66,86 @@ Kickoff Steps
 #     ## 
 
 class Builder(object):
-    def add_docs(self):
-        print(self.filename)
-        print(self.config)
+    details = dict()
+
+    def get_info(self):
+        result = dict()
+        for line in fileinput.input(self.filename):
+            filename = fileinput.filename()
+            lineno = fileinput.lineno()
+            keywords = self.config.get('keywords')
+            ignore = self.config.get('ignore')
+            found = len(filter(lambda word: word in keywords, line.split(' '))) > 0
+            if not self.details.get(filename):
+                self.details[filename] = dict()
+
+            if found:
+                length = get_file_lines(filename)
+                result = self.extract_and_set_information(filename, lineno, line, length)
+                if self.validate(result):
+                    self.details[filename][result.get('name')] = result
 
 class MethodBuilder(Builder):
     def __init__(self, filename, config):
         self.filename = filename
         self.config = config
+
+    def extract_and_set_information(self, filename, start, line, length):
+        start_line = linecache.getline(filename, start)
+        initial_line = line
+        start_leading_space = get_leading_whitespace(start_line) # Where function started
+        method_string = start_line
+        line_within_scope = True
+        lineno = start + 1
+        line = linecache.getline(filename, lineno)
+        end_of_file = False
+        end = None
+        while (line_within_scope and not end_of_file):
+            current_leading_space = get_leading_whitespace(line)
+            if len(current_leading_space) <= len(start_leading_space) and line.strip():
+                end = lineno - 1
+                break
+            method_string += line
+            lineno = lineno + 1
+            line = linecache.getline(filename, int(lineno))
+            end_of_file = True if lineno > length else False
+
+        if not end:
+            end = length
+
+        return dict(plain=method_string,
+                           name=self._set_name(initial_line),
+                           start=start,
+                           end=end,
+                           filename=filename)
+
+    def validate(self, result):
+        if not result:
+            return False
+        name = result.get('name')
+        if name not in self.config.get('ignore', []) \
+            and not self.is_first_line_documented(result) \
+            and click.confirm('Do you want to document method {}?'.format(click.style(name, fg='green'))):
+                return True
+
+        return False
+
+    def is_first_line_documented(self, result):
+        returned = False
+        for x in range(result.get('start'), result.get('end')):
+            line = linecache.getline(result.get('filename'), x)
+            if self.config.get('open') in line:
+                result = True
+                break
+        return returned
+
+    def _set_name(self, line):
+        for keyword in self.config.get('keywords', []):
+            clear_defs = re.sub(keyword, '', line.strip())
+            name = re.sub(r'\([^)]*\)\:', '', clear_defs).strip()
+            if name:
+                return name
+
 
 class DYC(Processor):
 
@@ -92,11 +163,15 @@ class DYC(Processor):
         # We need to attach the filename along with the format.
         # To let the MethodBuilder be focused only on getting things processed
         # So let's prepare a tuple of filename, format here.
-        formatted_files = self.map_files_with_format()
+        for filename in self.file_list:
+            extension = get_extension(filename)
+            fmt = self.formats.get(extension)
+            builder = MethodBuilder(filename, fmt.get('method', {}))
+            builder.get_info()
+            # Once we have gotten the information
+            # We are clear to start prompting methods from these files
+            # We need a base class formatter
 
-        for filename, dyc_format in formatted_files:
-            builder = MethodBuilder(filename, dyc_format)
-            builder.add_docs()
 
     def process_classes(self):
         self.classes = ClassesBuilder()

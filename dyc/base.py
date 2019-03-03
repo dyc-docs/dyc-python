@@ -14,7 +14,7 @@ class FilesDirector():
 
     def map_files_with_format(self):
 		return map(lambda filename: (filename, filter(lambda fmt: (fmt.get('extension') == get_extension(filename)), self.config.get('formats'))), self.file_list)
-
+  
     def apply_includes(self):
         pass
 
@@ -33,7 +33,14 @@ class FilesDirector():
         self.file_list = result
 
 
-class Processor(FilesDirector):
+class FormatsDirector():
+
+    formats = dict()
+
+    def prepare_formats(self):
+        self.formats = {ext.get('extension'): ext for ext in self.config.get('formats')}
+
+class Processor(FilesDirector, FormatsDirector):
     """Subclass process that runs complete lifecycle for DYC"""
     def start(self):
     	pass
@@ -43,6 +50,7 @@ class Processor(FilesDirector):
 
     def prepare(self):
     	self.prepare_files()
+        self.prepare_formats()
 
     @property
     def extensions(self):

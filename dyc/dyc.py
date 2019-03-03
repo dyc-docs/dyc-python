@@ -17,6 +17,7 @@ def main(config):
 @config
 def start(config, input):
     """Simple program that greets NAME for a total of COUNT times."""
+    # print(config)
     dyc = DYC(config.plain)
     dyc.prepare()
     dyc.process_methods()

@@ -10,7 +10,7 @@ import os
 import git
 import ntpath
 import linecache
-from utils import get_hunk, get_additions_in_first_hunk, line_num_for_phrase_in_file
+from utils import get_hunk, get_additions_in_first_hunk
 from base import Processor
 
 class DiffParser():

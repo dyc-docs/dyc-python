@@ -101,13 +101,3 @@ def get_additions_in_first_hunk(hunk):
     start = int(adds_patch[0])
     end = int(start) + int(adds_patch[1])
     return start, end
-
-
-def line_num_for_phrase_in_file(phrase='', filename='', _range=(0, 0)):
-    start, end = _range
-    with open(filename,'r') as f:
-        for (i, line) in enumerate(f):
-            within_range = (i >= start) and (i <= end)
-            if phrase == line and within_range:
-                return i
-    return -1
