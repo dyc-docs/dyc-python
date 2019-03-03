@@ -66,12 +66,15 @@ Kickoff Steps
 
 #     ## 
 
-# class Builder(object):
+class Builder(object):
+    def add_docs(self):
+        print(self.filename)
+        print(self.config)
 
-#     def candidates(self, file_list):
-#         for 
-
-
+class MethodBuilder(Builder):
+    def __init__(self, filename, config):
+        self.filename = filename
+        self.config = config
 
 class DYC(Processor):
 
@@ -89,8 +92,11 @@ class DYC(Processor):
         # We need to attach the filename along with the format.
         # To let the MethodBuilder be focused only on getting things processed
         # So let's prepare a tuple of filename, format here.
-        with_formats = self.get_file_with_formats()
-        MethodBuilder(with_formats).chunk()
+        formatted_files = self.map_files_with_format()
+
+        for filename, dyc_format in formatted_files:
+            builder = MethodBuilder(filename, dyc_format)
+            builder.add_docs()
 
     def process_classes(self):
         self.classes = ClassesBuilder()

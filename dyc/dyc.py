@@ -30,8 +30,7 @@ def start(config, input):
 def diff(config):
     """This argument will run DYC on DIFF patch only"""
     diff = Diff(config.plain)
-    for index in diff.uncommitted:
-        print(index)
+    # for index in diff.uncommitted:
     #     if index.get('diff'):
     #         diff = index.get('diff')
     #         name = index.get('name')
