@@ -12,9 +12,6 @@ class FilesDirector():
         self.apply_includes()
         self.apply_excludes()
 
-    def map_files_with_format(self):
-		return map(lambda filename: (filename, filter(lambda fmt: (fmt.get('extension') == get_extension(filename)), self.config.get('formats'))), self.file_list)
-  
     def apply_includes(self):
         pass
 

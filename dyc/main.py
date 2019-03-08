@@ -68,7 +68,7 @@ Kickoff Steps
 class Builder(object):
     details = dict()
 
-    def get_info(self):
+    def initialize(self):
         result = dict()
         for line in fileinput.input(self.filename):
             filename = fileinput.filename()
@@ -83,7 +83,142 @@ class Builder(object):
                 length = get_file_lines(filename)
                 result = self.extract_and_set_information(filename, lineno, line, length)
                 if self.validate(result):
-                    self.details[filename][result.get('name')] = result
+                    self.details[filename][result.name] = result
+
+    def prompts(self):
+        """Abstart method to get inputs from user"""
+        pass
+
+
+class MethodFormatterV2():
+
+    formatted_string = '{open}{break_after_open}{method_docstring}{break_after_docstring}{arguments_title}{arguments}{break_before_close}{close}'
+
+    def format(self):
+        self.pre()
+        # print(self.config)
+        # print(self.build_docstrings())
+        # print(self.build_arguments())
+
+    def wrap_strings(self, words):
+        subs = []
+        n = self.config.get('words_per_line')
+        for i in range(0, len(words), n):
+            subs.append(" ".join(words[i:i+n]))
+        return '\n'.join(subs)
+
+
+    def build_docstrings(self):
+        text = self.method_docstring or 'Missing Docstring!'
+        formatted_result = self.wrap_strings(text.split())
+
+    def pre():
+        method_format = copy.deepcopy(self.config)
+        method_format['indent'] = get_indent(method_format['indent']) else '    '
+        method_format['indent_content'] = get_indent(method_format['indent']) if get_indent(method_format['indent_content']) else ''
+        method_format['break_after_open'] = '\n' if method_format['break_after_open'] else ''
+        method_format['break_after_docstring'] = '\n' if method_format['break_after_docstring'] else ''
+        method_format['break_before_close'] = '\n' if method_format['break_before_close'] else ''
+
+        argument_format = copy.deepcopy(self.config.get('arguments'))
+        argument_format['title'] = 'Parameters'
+        argument_format['underline'] = '\n' if
+        argument_format['add_type'] = '\n' if
+        argument_format['inline'] = '\n' if
+        argument_format['prefix'] = ''
+
+        self.method_format = method_format
+        self.argument_format = argument_format
+
+    def breaks(self):
+        break_after_open = self.config.get('break_after_open')
+        self.format['break_after_open'] = '\n' if break_after_open else ''
+
+        break_before_close = self.format.get('break_before_close')
+        self.format['break_before_close'] = '\n' if break_before_close else ''
+
+        break_after_docstring = self.format.get('break_after_docstring')
+        self.format['break_after_docstring'] = '\n' if break_after_docstring else ''
+
+        # Side effects
+        if not self.format.get('arguments') and break_before_close and break_after_docstring:
+            self.format['break_before_close'] = ''
+
+    def build_arguments(self):
+        args_config = self.config.get('arguments')
+        if len(self.arguments):
+            title = args_config.get('title')
+            if args_config.get('underline'):
+                underline = '-' * len(title)
+                self.format['arguments_title'] = '{}\n{}'.format(title, underline)
+            else:
+                self.format['arguments_title'] = '{}'.format(title)
+
+            # Add Arguments here
+            self.format['arguments'] = '\n'
+            add_type = args_config.get('add_type')
+            for index, arg in enumerate(args):
+                fmt = BlankFormatter()
+                last = len(args) - 1 == index
+                arg['break_after'] = '\n' if not last else ''
+                arg['break'] = '\n' if args_config.get('inline') == False else ''
+                arg['leading_space'] = '    '
+                arg['prefix'] = args_config.get('prefix')
+                result = fmt.format('{prefix} {name} : {type}{break}{leading_space}{doc}{break_after}', **arg)
+                self.format['arguments'] += result
+        else:
+            self.format['arguments'] = ''
+
+    def add_indentation(self):
+        temp = self.result.split('\n')
+        space = get_indent(self.format.get('indent'))
+        indent_content = get_indent(self.format.get('indent_content'))
+        if indent_content:
+            content = temp[1:-1]
+            content = [indent_content + docline for docline in temp][1:-1]
+            temp[1:-1] = content
+        self.result = '\n'.join([space + docline for docline in temp])
+
+    def run(self, method_doc):
+        self.build_docstrings(method_doc)
+        self.build_arguments(method_doc)
+        self.breaks()
+        fmt = BlankFormatter()
+        self.result = fmt.format('{open}{break_after_open}{docstring}{break_after_docstring}{arguments_title}{arguments}{break_before_close}{close}', **self.format)
+        self.add_indentation()
+
+
+class MethodInterface(MethodFormatterV2):
+    def __init__(self, plain, name, start, end, filename, arguments, config):
+        self.plain = plain
+        self.name = name
+        self.start = start
+        self.end = end
+        self.filename = filename
+        self.arguments = arguments
+        self.method_docstring = ''
+        self.arg_docstring = []
+        self.config = config
+
+
+    def prompt(self):
+        self._prompt_docstring()
+        self._prompt_args()
+        self.format()
+        
+
+    def _prompt_docstring(self):
+        echo_name = click.style(self.name, fg='green')
+        self.method_docstring = click.prompt('\n({}) Method docstring '.format(echo_name))
+
+    def _prompt_args(self):
+        def _echo_arg_style(argument):
+            return click.style('{}'.format(argument), fg='green')
+        for arg in self.arguments:
+            arg_doc = click.prompt('\n({}) Argument docstring '.format(_echo_arg_style(arg)))
+            arg_type = click.prompt('({}) Argument type '.format(_echo_arg_style(arg)))
+            self.arg_docstring.append(dict(type=arg_type, doc=arg_doc, name=arg))
+
 
 class MethodBuilder(Builder):
     def __init__(self, filename, config):
@@ -113,16 +248,18 @@ class MethodBuilder(Builder):
         if not end:
             end = length
 
-        return dict(plain=method_string,
-                           name=self._set_name(initial_line),
-                           start=start,
-                           end=end,
-                           filename=filename)
+        return MethodInterface(plain=method_string,
+                    name=self._set_name(initial_line),
+                    start=start,
+                    end=end,
+                    filename=filename,
+                    arguments=self.extract_arguments(initial_line.strip('\n')),
+                    config=self.config)
 
     def validate(self, result):
         if not result:
             return False
-        name = result.get('name')
+        name = result.name
         if name not in self.config.get('ignore', []) \
             and not self.is_first_line_documented(result) \
             and click.confirm('Do you want to document method {}?'.format(click.style(name, fg='green'))):
@@ -130,10 +267,15 @@ class MethodBuilder(Builder):
 
         return False
 
+    def extract_arguments(self, line):
+        args = ArgumentDetails(line, self.config.get('arguments', {}))
+        args.extract()
+        return args.sanitize()
+
     def is_first_line_documented(self, result):
         returned = False
-        for x in range(result.get('start'), result.get('end')):
-            line = linecache.getline(result.get('filename'), x)
+        for x in range(result.start, result.end):
+            line = linecache.getline(result.filename, x)
             if self.config.get('open') in line:
                 result = True
                 break
@@ -141,12 +283,19 @@ class MethodBuilder(Builder):
 
     def _set_name(self, line):
         for keyword in self.config.get('keywords', []):
-            clear_defs = re.sub(keyword, '', line.strip())
+            clear_defs = re.sub('{} '.format(keyword), '', line.strip())
             name = re.sub(r'\([^)]*\)\:', '', clear_defs).strip()
+            if re.search(r'\((.*)\)', name):
+                name = re.match(r'^[^\(]+', name).group()
             if name:
                 return name
 
-
+    def prompts(self):
+        if not self.details:
+            return
+        for filename, func_pack in self.details.iteritems():
+            for method_interface in func_pack.values():
+                method_interface.prompt()
 class DYC(Processor):
 
     def __init__(self, config, details=None):
@@ -166,8 +315,11 @@ class DYC(Processor):
         for filename in self.file_list:
             extension = get_extension(filename)
             fmt = self.formats.get(extension)
-            builder = MethodBuilder(filename, fmt.get('method', {}))
-            builder.get_info()
+            method_cnf = fmt.get('method', {})
+            method_cnf['arguments'] = fmt.get('arguments')
+            builder = MethodBuilder(filename, method_cnf)
+            builder.initialize()
+            builder.prompts()
             # Once we have gotten the information
             # We are clear to start prompting methods from these files
             # We need a base class formatter
@@ -354,8 +506,18 @@ class MethodDetails(object):
 
 class ArgumentDetails(object):
 
-    def __init__(self, line):
+    def __init__(self, line, config):
         self.line = line
+        self.config = config
+        self.args = []
+
+    def extract(self):
+        ignore = self.config.get('ignore')
+        args = re.search(r'\((.*)\)', self.line).group(1).split(', ')
+        self.args = filter(lambda x: x not in ignore, filter(None, [arg.strip() for arg in args]))
+        
+    def sanitize(self):
+        return map(lambda arg: re.findall(r"[a-zA-Z0-9_]+", arg)[0], self.args)
 
     def get_args(self, cnf):
         ignore = cnf.get('ignore')
