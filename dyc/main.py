@@ -9,6 +9,7 @@ import sys
 import re
 import string
 import fileinput
+import copy
 import linecache
 import click
 from formats import DefaultConfig, ExtensionManager
@@ -96,9 +97,8 @@ class MethodFormatterV2():
 
     def format(self):
         self.pre()
-        # print(self.config)
-        # print(self.build_docstrings())
-        # print(self.build_arguments())
+        self.build_docstrings()
+        print(self.build_arguments())
 
     def wrap_strings(self, words):
         subs = []
@@ -110,64 +110,50 @@ class MethodFormatterV2():
 
     def build_docstrings(self):
         text = self.method_docstring or 'Missing Docstring!'
-        formatted_result = self.wrap_strings(text.split())
+        self.method_format['method_docstring'] = self.wrap_strings(text.split(' '))
 
-    def pre():
+    def pre(self):
         method_format = copy.deepcopy(self.config)
-        method_format['indent'] = get_indent(method_format['indent']) else '    '
+        method_format['indent'] = get_indent(method_format['indent']) if method_format['indent'] else '    '
         method_format['indent_content'] = get_indent(method_format['indent']) if get_indent(method_format['indent_content']) else ''
         method_format['break_after_open'] = '\n' if method_format['break_after_open'] else ''
         method_format['break_after_docstring'] = '\n' if method_format['break_after_docstring'] else ''
         method_format['break_before_close'] = '\n' if method_format['break_before_close'] else ''
 
         argument_format = copy.deepcopy(self.config.get('arguments'))
-        argument_format['title'] = 'Parameters'
-        argument_format['underline'] = '\n' if
-        argument_format['add_type'] = '\n' if
-        argument_format['inline'] = '\n' if
-        argument_format['prefix'] = ''
+        argument_format['inline'] = '' if argument_format['inline'] else '\n'
 
         self.method_format = method_format
         self.argument_format = argument_format
 
-    def breaks(self):
-        break_after_open = self.config.get('break_after_open')
-        self.format['break_after_open'] = '\n' if break_after_open else ''
-
-        break_before_close = self.format.get('break_before_close')
-        self.format['break_before_close'] = '\n' if break_before_close else ''
-
-        break_after_docstring = self.format.get('break_after_docstring')
-        self.format['break_after_docstring'] = '\n' if break_after_docstring else ''
-
-        # Side effects
-        if not self.format.get('arguments') and break_before_close and break_after_docstring:
-            self.format['break_before_close'] = ''
-
     def build_arguments(self):
-        args_config = self.config.get('arguments')
+        result = ''
+        fmt = BlankFormatter()
         if len(self.arguments):
-            title = args_config.get('title')
-            if args_config.get('underline'):
-                underline = '-' * len(title)
-                self.format['arguments_title'] = '{}\n{}'.format(title, underline)
-            else:
-                self.format['arguments_title'] = '{}'.format(title)
+            print(self.argument_format)
+        # args_config = self.config.get('arguments')
+        # if len(self.arguments):
+        #     title = args_config.get('title')
+        #     if args_config.get('underline'):
+        #         underline = '-' * len(title)
+        #         self.format['arguments_title'] = '{}\n{}'.format(title, underline)
+        #     else:
+        #         self.format['arguments_title'] = '{}'.format(title)
 
-            # Add Arguments here
-            self.format['arguments'] = '\n'
-            add_type = args_config.get('add_type')
-            for index, arg in enumerate(args):
-                fmt = BlankFormatter()
-                last = len(args) - 1 == index
-                arg['break_after'] = '\n' if not last else ''
-                arg['break'] = '\n' if args_config.get('inline') == False else ''
-                arg['leading_space'] = '    '
-                arg['prefix'] = args_config.get('prefix')
-                result = fmt.format('{prefix} {name} : {type}{break}{leading_space}{doc}{break_after}', **arg)
-                self.format['arguments'] += result
-        else:
-            self.format['arguments'] = ''
+        #     # Add Arguments here
+        #     self.format['arguments'] = '\n'
+        #     add_type = args_config.get('add_type')
+        #     for index, arg in enumerate(args):
+        #         fmt = BlankFormatter()
+        #         last = len(args) - 1 == index
+        #         arg['break_after'] = '\n' if not last else ''
+        #         arg['break'] = '\n' if args_config.get('inline') == False else ''
+        #         arg['leading_space'] = '    '
+        #         arg['prefix'] = args_config.get('prefix')
+        #         result = fmt.format('{prefix} {name} : {type}{break}{leading_space}{doc}{break_after}', **arg)
+        #         self.format['arguments'] += result
+        # else:
+        #     self.format['arguments'] = ''
 
     def add_indentation(self):
         temp = self.result.split('\n')
