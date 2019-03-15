@@ -22,11 +22,11 @@ class Builder(object):
 
     def initialize(self, change=None):
         result = dict()
-        hunks = None
 
+        patches = []
         if change:
             patches = change.get('additions')
-            hunks = [patch.get('hunk') for patch in patches]
+
         for line in fileinput.input(self.filename):
             filename = fileinput.filename()
             lineno = fileinput.lineno()
@@ -34,7 +34,7 @@ class Builder(object):
             found = len(filter(lambda word: word in keywords, line.split(' '))) > 0
 
             if change and found:
-                found = self._is_line_part_of_hunk(lineno, hunks)
+                found = self._is_line_part_of_patches(lineno, line, patches)
 
             if not self.details.get(filename):
                 self.details[filename] = dict()
@@ -45,8 +45,17 @@ class Builder(object):
                 if self.validate(result):
                     self.details[filename][result.name] = result
 
-    def _is_line_part_of_hunk(self, lineno, hunks):
-        return any([start <= lineno <= end for start, end in hunks])
+    def _is_line_part_of_patches(self, lineno, line, patches):
+        result = False
+        for change in patches:
+            start, end = change.get('hunk')
+            if start <= lineno <= end:
+                patch = change.get('patch')
+                found = filter(lambda l: line.replace('\n', '') == l, patch.split('\n'))
+                if found:
+                    result = True
+                    break
+        return result
 
     def prompts(self):
         """Abstract method to get inputs from user"""
