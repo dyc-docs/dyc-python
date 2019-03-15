@@ -7,8 +7,8 @@ class FilesDirector():
 
     WILD_CARD = ['.', '*']
 
-    def prepare_files(self):
-        self.set_files_to_read()
+    def prepare_files(self, files=[]):
+        self.set_files_to_read(files=files)
         self.apply_includes()
         self.apply_excludes()
 
@@ -18,11 +18,16 @@ class FilesDirector():
     def apply_excludes(self):
     	pass
 
-    def set_files_to_read(self):
+    def set_files_to_read(self, files=[]):
         if self.config.get('file_list'):
             # File list has already been passed
             self.file_list = self.config.get('file_list')
             return
+
+        if len(files):
+            self.file_list = files
+            return
+
         result = []
         for paths in all_files_generator(extensions=self.extensions):
             result += paths
@@ -45,8 +50,8 @@ class Processor(FilesDirector, FormatsDirector):
         # self.prompts()
         # self.apply()
 
-    def prepare(self):
-    	self.prepare_files()
+    def prepare(self, files=[]):
+        self.prepare_files(files=files)
         self.prepare_formats()
 
     @property

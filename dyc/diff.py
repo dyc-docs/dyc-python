@@ -26,6 +26,7 @@ class DiffParser():
         patches = []
         for diff in self.diffs:
             if not self.is_candidate(diff.a_path):
+                print('File {} is not a candidate to apply DYC'.format(diff.a_path))
                 continue
             sep = '{} a/{} b/{}'.format(self.PREFIX, diff.a_path, diff.b_path)
             patch = self.__clean(self.__patch(sep), diff)

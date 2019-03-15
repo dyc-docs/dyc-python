@@ -21,9 +21,6 @@ def start(config, input):
     dyc = DYC(config.plain)
     dyc.prepare()
     dyc.process_methods()
-    # dyc.process_classes()
-    # dyc.process_top()
-    # dyc.start()
 
 
 @main.command()
@@ -31,11 +28,9 @@ def start(config, input):
 def diff(config):
     """This argument will run DYC on DIFF patch only"""
     diff = Diff(config.plain)
-    # for index in diff.uncommitted:
-    #     if index.get('diff'):
-    #         diff = index.get('diff')
-    #         name = index.get('name')
-    #         temp_file = '.dyc.{}'.format(name)
-    #         dyc = DYC.candidates(index.get('path'), index.get('additions'))
-    #         dyc.prompts()
-    #         dyc.apply()
+    uncommitted = diff.uncommitted
+    paths = [idx.get('path') for idx in uncommitted]
+    if len(uncommitted):
+        dyc = DYC(config.plain)
+        dyc.prepare(files=paths)
+        dyc.process_methods(diff_only=True, changes=uncommitted)
