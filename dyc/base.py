@@ -1,7 +1,62 @@
-import os
-import glob
 import fileinput
-from utils import all_files_generator, get_extension
+from utils import all_files_generator, get_file_lines
+
+class Builder(object):
+    details = dict()
+
+    def initialize(self, change=None):
+        result = dict()
+
+        patches = []
+        if change:
+            patches = change.get('additions')
+
+        for line in fileinput.input(self.filename):
+            filename = fileinput.filename()
+            lineno = fileinput.lineno()
+            keywords = self.config.get('keywords')
+            found = len(filter(lambda word: word.lstrip() in keywords, line.split(' '))) > 0
+
+            if change and found:
+                found = self._is_line_part_of_patches(lineno, line, patches)
+
+            if not self.details.get(filename):
+                self.details[filename] = dict()
+
+            if found:
+                length = get_file_lines(filename)
+                result = self.extract_and_set_information(filename, lineno, line, length)
+                if self.validate(result):
+                    self.details[filename][result.name] = result
+
+    def _is_line_part_of_patches(self, lineno, line, patches):
+        result = False
+        for change in patches:
+            start, end = change.get('hunk')
+            if start <= lineno <= end:
+                patch = change.get('patch')
+                found = filter(lambda l: line.replace('\n', '') == l, patch.split('\n'))
+                if found:
+                    result = True
+                    break
+        return result
+
+    def clear(self, filename):
+        """Clear changes in a filename"""
+        try:
+            del self.details[filename]
+        except KeyError:
+            # Probably the filename is not already there
+            return
+
+    def prompts(self):
+        """Abstract method to get inputs from user"""
+        pass
+
+    def apply(self):
+        """Abstract method to changes on the file"""
+        pass
+
 
 class FilesDirector():
 

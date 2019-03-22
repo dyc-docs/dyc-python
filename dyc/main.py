@@ -15,55 +15,42 @@ import click
 from formats import DefaultConfig, ExtensionManager
 from utils import get_leading_whitespace, BlankFormatter, get_indent, add_start_end, get_file_lines, get_hunk, get_extension
 from .exceptions import QuitConfirmEditor
-from .base import Processor
+from .base import Processor, Builder
 
-class Builder(object):
-    details = dict()
 
-    def initialize(self, change=None):
-        result = dict()
+class DYC(Processor):
 
-        patches = []
-        if change:
-            patches = change.get('additions')
+    def __init__(self, config, details=None):
+        self.config = config
+        self.details = details
+        self.result = []
 
-        for line in fileinput.input(self.filename):
-            filename = fileinput.filename()
-            lineno = fileinput.lineno()
-            keywords = self.config.get('keywords')
-            found = len(filter(lambda word: word in keywords, line.split(' '))) > 0
+    def setup(self):
+        self.details = FilesReader(self.options).details
 
-            if change and found:
-                found = self._is_line_part_of_patches(lineno, line, patches)
+    def process_methods(self, diff_only=False, changes=[]):
+        for filename in self.file_list:
+            print('\nProcessing {filename}\n\r'.format(filename=filename))
+            try:
+                change = filter(lambda x: x.get('path') == filename, changes)[0]
+            except:
+                change = None
 
-            if not self.details.get(filename):
-                self.details[filename] = dict()
+            extension = get_extension(filename)
+            fmt = self.formats.get(extension)
+            method_cnf = fmt.get('method', {})
+            method_cnf['arguments'] = fmt.get('arguments')
+            builder = MethodBuilder(filename, method_cnf)
+            builder.initialize(change=change)
+            builder.prompts()
+            builder.apply()
+            builder.clear(filename)
 
-            if found:
-                length = get_file_lines(filename)
-                result = self.extract_and_set_information(filename, lineno, line, length)
-                if self.validate(result):
-                    self.details[filename][result.name] = result
+    def process_classes(self):
+        self.classes = ClassesBuilder()
 
-    def _is_line_part_of_patches(self, lineno, line, patches):
-        result = False
-        for change in patches:
-            start, end = change.get('hunk')
-            if start <= lineno <= end:
-                patch = change.get('patch')
-                found = filter(lambda l: line.replace('\n', '') == l, patch.split('\n'))
-                if found:
-                    result = True
-                    break
-        return result
-
-    def prompts(self):
-        """Abstract method to get inputs from user"""
-        pass
-
-    def apply(self):
-        """Abstract method to changes on the file"""
-        pass
+    def process_top(self):
+        self.tops = TopBuilder()
 
 class MethodFormatter():
 
@@ -104,18 +91,26 @@ class MethodFormatter():
         self.method_format['method_docstring'] = self.wrap_strings(text.split(' '))
 
     def build_arguments(self):
+        if not len(self.arguments):
+            self.method_format['argument_format'] = ''
+            self.method_format['break_before_close'] = ''
+            return
+
         config = self.config.get('arguments')
         formatted_args = '{prefix} {type} {name}: {doc}'
+
         title = self.argument_format.get('title')
         if title:
             underline = '-' * len(title)
             self.argument_format['title'] = '{}\n{}\n'.format(title, underline) if config.get('underline') else '{}\n'.format(title)
 
         result = []
+
         if len(self.arguments):
             for argument_details in self.arg_docstring:
                 argument_details['prefix'] = self.argument_format.get('prefix')
                 result.append(self.fmt.format(formatted_args, **argument_details).strip())
+
         self.argument_format['body'] = '\n'.join(result)
         self.method_format['argument_format'] = self.fmt.format('{title}{body}', **self.argument_format)
 
@@ -254,16 +249,19 @@ class MethodBuilder(Builder):
         for x in range(result.start, result.end):
             line = linecache.getline(result.filename, x)
             if self.config.get('open') in line:
-                result = True
+                returned = True
                 break
         return returned
 
     def prompts(self):
         for method_interface in self._method_interface_gen():
-            method_interface.prompt()
+            method_interface.prompt() if method_interface else None
 
     def apply(self):
         for method_interface in self._method_interface_gen():
+            if not method_interface:
+                continue
+
             for line in fileinput.input(method_interface.filename, inplace=True):
                 if fileinput.lineno() == method_interface.start:
                     if self.config.get('within_scope'):
@@ -289,38 +287,6 @@ class MethodBuilder(Builder):
                 name = re.match(r'^[^\(]+', name).group()
             if name:
                 return name
-
-class DYC(Processor):
-
-    def __init__(self, config, details=None):
-        self.config = config
-        self.details = details
-        self.result = []
-
-    def setup(self):
-        self.details = FilesReader(self.options).details
-
-    def process_methods(self, diff_only=False, changes=[]):
-        for filename in self.file_list:
-            try:
-                change = filter(lambda x: x.get('path') == filename, changes)[0]
-            except:
-                change = None
-
-            extension = get_extension(filename)
-            fmt = self.formats.get(extension)
-            method_cnf = fmt.get('method', {})
-            method_cnf['arguments'] = fmt.get('arguments')
-            builder = MethodBuilder(filename, method_cnf)
-            builder.initialize(change=change)
-            builder.prompts()
-            builder.apply()
-
-    def process_classes(self):
-        self.classes = ClassesBuilder()
-
-    def process_top(self):
-        self.tops = TopBuilder()
 
 class ArgumentDetails(object):
 

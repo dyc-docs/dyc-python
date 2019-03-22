@@ -10,18 +10,3 @@ class Main(object):
 
 def nested_one():
 	return a
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

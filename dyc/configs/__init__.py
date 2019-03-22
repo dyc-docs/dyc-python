@@ -2,7 +2,7 @@ import os
 from ..utils import read_yaml, read_config
 from ..exceptions import FormattingConfigurationHandler
 ROOT_PATH = os.getcwd()
-DEFAULT = os.path.join(ROOT_PATH, 'dyc', 'configs', 'defaults.yaml')
+DEFAULT = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'defaults.yaml')
 CUSTOM = os.path.join(ROOT_PATH, 'dyc.yaml')
 
 class ExtensionManager(object):
