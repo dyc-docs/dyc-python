@@ -5,24 +5,6 @@ ROOT_PATH = os.getcwd()
 DEFAULT = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'defaults.yaml')
 CUSTOM = os.path.join(ROOT_PATH, 'dyc.yaml')
 
-class ExtensionManager(object):
-    @classmethod
-    def get_format_extension(self, extension, configs):
-        result = filter(lambda cnf: cnf.get('extension') == extension, configs)
-        if len(result):
-        	return result[0]
-        else:
-        	return dict()
-
-class DefaultConfig(object):
-    def __init__(self, filename):
-        extension = filename.split('.')[-1]
-        configs = next(read_config(DEFAULT))
-        try:
-            self.config = ExtensionManager.get_format_extension(extension, configs)
-        except Exception as e:
-            raise FormattingConfigurationHandler(e.message)
-
 class Config(object):
     default = read_yaml(DEFAULT)
     custom = read_yaml(CUSTOM)

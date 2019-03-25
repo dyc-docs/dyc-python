@@ -1,11 +1,11 @@
-import os
 import click
-import tempfile
 from .parser import ParsedConfig
 from .main import DYC
 from diff import Diff
 
 config = click.make_pass_decorator(ParsedConfig, ensure=True)
+# ParsedConfig class wrapping all settings, on every Click command, passed as decorator
+# will pass the config as a first argument (Based on the order it is passed)
 
 @click.group()
 @config
@@ -13,10 +13,13 @@ def main(config):
     pass
 
 @main.command()
-@click.argument('input', type=click.File('r'), required=False, default=None)
 @config
-def start(config, input):
-    """Simple program that greets NAME for a total of COUNT times."""
+def start(config):
+    """
+        This is the entry point of starting DYC for the whole project.
+        When you run `dyc start`. ParsedConfig will wrap all the files list going to loop
+        over and add missing documentation on.
+    """
     # print(config)
     dyc = DYC(config.plain)
     dyc.prepare()
