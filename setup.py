@@ -5,14 +5,19 @@ except ImportError:
 
 
 setup(
-    name='Document Your Code',
-    version='1.0',
-    py_modules=['dyc'],
+    name="Document Your Code",
+    version="0.0.1",
+    author="Mohammad Albakri",
+    author_email="mohammad.albakri93@gmail.com",
+    py_modules=["dyc"],
+    long_description=open("README.md").read(),
+    long_description_content_type="text/markdown",
+    url="https://github.com/dyc-docs/dyc-python.git",
     install_requires=[
-        'click==7.0',
-        'pyyaml'
+        "click==7.0",
+        "pyyaml"
         ],
     entry_points = {
-        'console_scripts': ['dyc=dyc.dyc:main'],
+        "console_scripts": ["dyc=dyc.dyc:main"],
     }
 )
