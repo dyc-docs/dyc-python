@@ -1,7 +1,7 @@
 try:
-    from setuptools import setup
+    from setuptools import setup, find_packages
 except ImportError:
-    from distutils.core import setup
+    from distutils.core import setup, find_packages
 
 
 setup(
@@ -9,7 +9,7 @@ setup(
     version="0.0.1",
     author="Mohammad Albakri",
     author_email="mohammad.albakri93@gmail.com",
-    packages=['dyc'],
+    packages=find_packages(['dyc', 'configs']),
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     url="https://github.com/dyc-docs/dyc-python.git",
