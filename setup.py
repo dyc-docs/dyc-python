@@ -9,7 +9,6 @@ setup(
     version="0.0.1",
     author="Mohammad Albakri",
     author_email="mohammad.albakri93@gmail.com",
-    py_modules=["dyc"],
     packages=['dyc'],
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
