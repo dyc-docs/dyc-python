@@ -10,12 +10,13 @@ setup(
     author="Mohammad Albakri",
     author_email="mohammad.albakri93@gmail.com",
     py_modules=["dyc"],
+    packages=['dyc'],
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     url="https://github.com/dyc-docs/dyc-python.git",
     install_requires=[
         "click==7.0",
-        "pyyaml"
+        "pyyaml==3.13"
         ],
     entry_points = {
         "console_scripts": ["dyc=dyc.dyc:main"],

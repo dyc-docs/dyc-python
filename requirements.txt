@@ -1,2 +1,2 @@
 click==7.0
-pyyaml
+pyyaml==3.13
