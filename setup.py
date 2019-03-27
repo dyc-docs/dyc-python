@@ -9,7 +9,7 @@ setup(
     version="0.0.1",
     author="Mohammad Albakri",
     author_email="mohammad.albakri93@gmail.com",
-    packages=find_packages(['dyc', 'configs']),
+    packages=find_packages(),
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     url="https://github.com/dyc-docs/dyc-python.git",
