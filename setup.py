@@ -19,5 +19,8 @@ setup(
         ],
     entry_points = {
         "console_scripts": ["dyc=dyc.dyc:main"],
-    }
+    },
+    package_data={  # Optional
+        '': ['*.yaml'],
+    },
 )
