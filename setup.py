@@ -3,10 +3,9 @@ try:
 except ImportError:
     from distutils.core import setup, find_packages
 
-
 setup(
     name="Document Your Code",
-    version="0.0.1",
+    version="0.0.2",
     author="Mohammad Albakri",
     author_email="mohammad.albakri93@gmail.com",
     packages=find_packages(),
@@ -20,7 +19,7 @@ setup(
     entry_points = {
         "console_scripts": ["dyc=dyc.dyc:main"],
     },
-    package_data={  # Optional
+    package_data={
         '': ['*.yaml'],
     },
 )

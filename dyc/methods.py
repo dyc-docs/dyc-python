@@ -13,6 +13,17 @@ class MethodBuilder(Builder):
         self.config = config
 
     def extract_and_set_information(self, filename, start, line, length):
+        """
+        This is a main abstract method tin the builder base
+        to add result into details. Used in Method Builder to
+        pull the candidates that are subject to docstrings
+        Parameters
+        ----------
+        str filename: The file's name
+        int start: Starting line
+        str line: Full line text
+        int length: The length of the extracted data
+        """
         start_line = linecache.getline(filename, start)
         initial_line = line
         start_leading_space = get_leading_whitespace(start_line) # Where function started
@@ -36,7 +47,7 @@ class MethodBuilder(Builder):
             end = length
 
         return MethodInterface(plain=method_string,
-                    name=self._set_name(initial_line),
+                    name=self._get_name(initial_line),
                     start=start,
                     end=end,
                     filename=filename,
@@ -45,6 +56,13 @@ class MethodBuilder(Builder):
                     leading_space=get_leading_whitespace(initial_line))
 
     def validate(self, result):
+        """
+        An abstract validator method that checks if the method is
+        still valid and gives the final decision
+        Parameters
+        ----------
+        MethodInterface result: The Method Interface result
+        """
         if not result:
             return False
         name = result.name
@@ -56,11 +74,25 @@ class MethodBuilder(Builder):
         return False
 
     def extract_arguments(self, line):
+        """
+        Public extract argument method that calls ArgumentDetails class to extract
+        arggs
+        Parameters
+        ----------
+        """
         args = ArgumentDetails(line, self.config.get('arguments', {}))
         args.extract()
         return args.sanitize()
 
     def is_first_line_documented(self, result):
+        """
+        A boolean function that determines weather the first line has
+        a docstring or not
+        Parameters
+        ----------
+        MethodInterface result: Is a method interface class that could be subject to be taking a docstring
+        str line: The line of the found method
+        """
         returned = False
         for x in range(result.start, result.end):
             line = linecache.getline(result.filename, x)
@@ -70,16 +102,24 @@ class MethodBuilder(Builder):
         return returned
 
     def prompts(self):
+        """
+        Abstract prompt method in builder to execute prompts over candidates
+        """
         for method_interface in self._method_interface_gen():
             method_interface.prompt() if method_interface else None
 
     def apply(self):
+        """
+        Over here we are looping over the result of the
+        chosen methods to document and applying tthe changes to the
+        files as confirmed
+        """
         for method_interface in self._method_interface_gen():
             if not method_interface:
                 continue
 
             for line in fileinput.input(method_interface.filename, inplace=True):
-                if fileinput.lineno() == method_interface.start:
+                if self._get_name(line) == method_interface.name:
                     if self.config.get('within_scope'):
                         sys.stdout.write(line + method_interface.result + '\n')
                     else:
@@ -88,6 +128,9 @@ class MethodBuilder(Builder):
                     sys.stdout.write(line)
 
     def _method_interface_gen(self):
+        """
+        A generator that yields the method interfaces
+        """
         if not self.details:
             yield None
 
@@ -95,7 +138,13 @@ class MethodBuilder(Builder):
             for method_interface in func_pack.values():
                 yield method_interface
 
-    def _set_name(self, line):
+    def _get_name(self, line):
+        """
+        Grabs the name of the method from the given line
+        Parameters
+        ----------
+        str line: String line that has the method's name
+        """
         for keyword in self.config.get('keywords', []):
             clear_defs = re.sub('{} '.format(keyword), '', line.strip())
             name = re.sub(r'\([^)]*\)\:', '', clear_defs).strip()
@@ -111,6 +160,10 @@ class MethodFormatter():
     fmt = BlankFormatter()
 
     def format(self):
+        """
+        Public formatting method that executes a pattern of methods to
+        complete the process
+        """
         self.pre()
         self.build_docstrings()
         self.build_arguments()
@@ -119,6 +172,12 @@ class MethodFormatter():
         self.polish()
 
     def wrap_strings(self, words):
+        """
+        Compact how many words should be in a line
+        Parameters
+        ----------
+        str words: docstring given
+        """
         subs = []
         n = self.config.get('words_per_line')
         for i in range(0, len(words), n):
@@ -126,6 +185,11 @@ class MethodFormatter():
         return '\n'.join(subs)
 
     def pre(self):
+        """
+        In the formatter, this method sets up the object that
+        will be used in a formatted way,. Also translates configs
+        into consumable values
+        """
         method_format = copy.deepcopy(self.config)
         method_format['indent'] = get_indent(method_format['indent']) if method_format['indent'] else '    '
         method_format['indent_content'] = get_indent(method_format['indent']) if get_indent(method_format['indent_content']) else ''
@@ -140,10 +204,17 @@ class MethodFormatter():
         self.argument_format = argument_format
 
     def build_docstrings(self):
+        """
+        Mainly adds docstrings of the method after cleaning up text
+        into reasonable chunks
+        """
         text = self.method_docstring or 'Missing Docstring!'
         self.method_format['method_docstring'] = self.wrap_strings(text.split(' '))
 
     def build_arguments(self):
+        """
+        Main function for wrapping up argument docstrings
+        """
         if not len(self.arguments):
             self.method_format['argument_format'] = ''
             self.method_format['break_before_close'] = ''
@@ -168,6 +239,9 @@ class MethodFormatter():
         self.method_format['argument_format'] = self.fmt.format('{title}{body}', **self.argument_format)
 
     def add_indentation(self):
+        """
+        Translates indent params to actual indents
+        """
         temp = self.result.split('\n')
         space = self.method_format.get('indent')
         indent_content = self.method_format.get('indent_content')
@@ -178,6 +252,13 @@ class MethodFormatter():
         self.result = '\n'.join([space + docline for docline in temp])
 
     def confirm(self, polished):
+        """
+        Pop up editor function to finally confirm if the documented
+        format is accepted
+        Parameters
+        ----------
+        str polished: complete polished string before popping up
+        """
         polished = add_start_end(polished)
         method_split = self.plain.split('\n')
         if self.config.get('within_scope'):
@@ -208,6 +289,9 @@ class MethodFormatter():
         self.result = '\n'.join(final)
 
     def polish(self):
+        """
+        Editor wrapper to confirm result
+        """
         docstring = self.result.split('\n')
         polished = '\n'.join([self.leading_space + docline for docline in docstring])
         self.confirm(polished)
@@ -227,17 +311,33 @@ class MethodInterface(MethodFormatter):
         self.leading_space = leading_space
 
     def prompt(self):
+        """
+        Wrapper method for prompts and calls for prompting args and
+        methods then formats them
+        """
         self._prompt_docstring()
         self._prompt_args()
         self.format()
 
     def _prompt_docstring(self):
+        """
+        Simple prompt for a method's docstring
+        """
         echo_name = click.style(self.name, fg='green')
         self.method_docstring = click.prompt('\n({}) Method docstring '.format(echo_name))
 
     def _prompt_args(self):
+        """
+        Wrapper for prompting arguments
+        """
         def _echo_arg_style(argument):
-            return click.style('{}'.format(argument), fg='green')
+            """
+            Just a small wrapper for echoing args
+            Parameters
+            ----------
+            str argument: argument name
+            """
+            return click.style('{}'.format(argument), fg='red')
         for arg in self.arguments:
             arg_doc = click.prompt('\n({}) Argument docstring '.format(_echo_arg_style(arg)))
             arg_type = click.prompt('({}) Argument type '.format(_echo_arg_style(arg))) if self.config.get('arguments', {}).get('add_type', False) else ''
@@ -252,14 +352,15 @@ class ArgumentDetails(object):
         self.args = []
 
     def extract(self):
+        """
+        Retrieves arguments from a line
+        """
         ignore = self.config.get('ignore')
         args = re.search(r'\((.*)\)', self.line).group(1).split(', ')
         self.args = filter(lambda x: x not in ignore, filter(None, [arg.strip() for arg in args]))
         
     def sanitize(self):
+        """
+        Sanitizes arguments to validate all arguments are correct
+        """
         return map(lambda arg: re.findall(r"[a-zA-Z0-9_]+", arg)[0], self.args)
-
-    def get_args(self, cnf):
-        ignore = cnf.get('ignore')
-        args = self.line[self.line.find("(")+1:self.line.find(")")].split(', ')
-        return filter(lambda x: x not in ignore, filter(None, [arg.strip() for arg in args]))

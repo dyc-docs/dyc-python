@@ -18,11 +18,21 @@ class DiffParser():
     PREFIX = 'diff --git'
 
     def parse(self, staged=False):
+        """
+        Main parser method that gets all the mandatory information from
+        a Diff chunk
+        Parameters
+        ----------
+        bool staged: Only using the staged files
+        """
         self.diffs = self.repo.index.diff('HEAD' if staged else None)
         self.plain = self.repo.git.diff('HEAD').split('\n')
         return self._pack()
 
     def _pack(self):
+        """
+        Wrapper that packs the information that'll be parsed
+        """
         patches = []
         for diff in self.diffs:
             if not self.is_candidate(diff.a_path):
@@ -34,10 +44,23 @@ class DiffParser():
         return patches
 
     def is_candidate(self, path):
+        """
+        Check if a file is a candidate to being documented
+        after looking at the allowed files from file_list
+        Parameters
+        ----------
+        str path: path of a file
+        """
         full_path = os.path.join(os.getcwd(), path)
         return full_path in self.file_list
 
     def __patch(self, separator):
+        """
+        A method that returns a patch
+        Parameters
+        ----------
+        str separator: Main separators from a diff chunk
+        """
         patch = []
         hit = False
         # end = False
@@ -52,6 +75,13 @@ class DiffParser():
         return '\n'.join(patch)
 
     def __pack(self, patch):
+        """
+        Packer to get from the chunk of diffs and attach
+        to additions
+        Parameters
+        ----------
+        str patch: Patched diff text
+        """
         final = []
         result = []
         hit = False
@@ -88,6 +118,13 @@ class DiffParser():
         return result
 
     def __additions(self, hunks, path):
+        """
+        Function that returns only the added text in a file
+        Parameters
+        ----------
+        list hunks: Group of added texts
+        str path: path of a file
+        """
         for hunk in hunks:
             patch = hunk.get('patch')
             result = []
@@ -111,7 +148,14 @@ class Diff(DiffParser, Processor):
 
     @property
     def uncommitted(self):
+        """
+        Property method that returns all uncommitted information
+        """
         return self._uncommitted()
 
     def _uncommitted(self):
+        """
+        Private method to return the data for the publich uncommitted
+        property
+        """
         return self.parse()

@@ -15,6 +15,15 @@ class DYC(Processor):
         self.config = config
 
     def process_methods(self, diff_only=False, changes=[]):
+        """
+        Main method that documents methods in a file. To any
+        file that needs to be documented. Process methods is the
+        entry point for getting the whole thing done
+        Parameters
+        ----------
+        bool diff_only: Use a diff only. Consumed by dyc diff.
+        list changes: Changes in a file, mainly use also with dyc diff.
+        """
         for filename in self.file_list:
             print('\nProcessing Methods on {filename}\n\r'.format(filename=filename))
             try:
@@ -33,9 +42,16 @@ class DYC(Processor):
             builder.clear(filename)
 
     def process_classes(self):
+        """
+        Main method that documents Classes in a file. Still TODO
+        """
         # self.classes = ClassesBuilder()
         pass
 
     def process_top(self):
+        """
+        Main method that documents a top of a file. Still
+        TODO
+        """
         # self.tops = TopBuilder()
         pass
