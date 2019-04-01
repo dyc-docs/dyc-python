@@ -4,8 +4,8 @@ except ImportError:
     from distutils.core import setup, find_packages
 
 setup(
-    name="Document Your Code",
-    version="0.0.2",
+    name="document-your-code",
+    version="0.0.4",
     author="Mohammad Albakri",
     author_email="mohammad.albakri93@gmail.com",
     packages=find_packages(),
