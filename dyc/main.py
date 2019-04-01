@@ -24,8 +24,8 @@ class DYC(Processor):
         bool diff_only: Use a diff only. Consumed by dyc diff.
         list changes: Changes in a file, mainly use also with dyc diff.
         """
+        print('\nProcessing Methods\n\r')
         for filename in self.file_list:
-            print('\nProcessing Methods on {filename}\n\r'.format(filename=filename))
             try:
                 change = filter(lambda x: x.get('path') == filename, changes)[0]
             except:
