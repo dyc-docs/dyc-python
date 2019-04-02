@@ -2,9 +2,9 @@
 
 DYC is a CLI tool that helps with documenting your source code. Answer `dyc` prompts and it will append docstrings to your code with keeping a consistent pattern of docstrings.
 
-    * Keep your Docstrings consistent.
-    * Document your DIFF patch.
-    * Ease of helping other developers understand your code.
+* Keep your Docstrings consistent.
+* Document your DIFF patch.
+* Ease of helping other developers understand your code.
 
 ## Tech
 
