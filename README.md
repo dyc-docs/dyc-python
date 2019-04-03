@@ -38,8 +38,8 @@ $  dyc diff
 
 *Methods*
 
-|          Key              |                                                       Description                                                           | Type |
-|:---------------------:    |:-----------------------------------------------------------------------------------------------------------------------:    |------|
+|          Key                |                                                       Description                                                           | Type |
+|:-----------------------:    |:-----------------------------------------------------------------------------------------------------------------------:    |------|
 |         `ignore`            |                                     Known method Names to be ignored from Docstrings                                        | list |
 |        `keywords`           |                            The necessary keyword to search for in a line the triggers actions                               | list |
 |        `enabled`            |                                   Determine if formatting is enabled for the extension                                      | bool |
@@ -56,14 +56,14 @@ $  dyc diff
 
 *Arguments*
 
-|    Key        |                  Description                      | Type  |
-|:---------:    |:---------------------------------------------:    |:----: |
-|   title       |    A title for arguments. i.e: "Parameters"       |  str  |
-| underline     |              Underline the title                  | bool  |
-|  add_type     | If true, it will prompt for the argument type     | bool  |
-|   inline      |   Add docstrings all inline or break within.      | bool  |
-|   ignore      |              Arguments to ignore.                 | list  |
-|   prefix      |            A prefix like "@param".                |  str  |
+|    Key          |                  Description                      | Type  |
+|:-----------:    |:---------------------------------------------:    |:----: |
+|   `title`       |    A title for arguments. i.e: "Parameters"       |  str  |
+| `underline`     |              Underline the title                  | bool  |
+|  `add_type`     | If true, it will prompt for the argument type     | bool  |
+|   `inline`      |   Add docstrings all inline or break within.      | bool  |
+|   `ignore`      |              Arguments to ignore.                 | list  |
+|   `prefix`      |            A prefix like "@param".                |  str  |
 
 ## Classes Docstring Options
 
