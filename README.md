@@ -20,7 +20,7 @@ $ pip install document-your-code
 ## Usage
 
 This is intended to work on all programming languages. Kicking off with Python as a starter (Only defualt formatting added). You can override
-the default settings for python files and extend new formats in `dyc.yaml` at your root project. Refer to [Example]() and [Advanced]()
+the default settings for python files and extend new formats in `dyc.yaml` at your root project. Refer to [Example](#Example) and [Advanced](#Advanced)
 
 
 To run on all files in a project. Run
