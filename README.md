@@ -19,6 +19,10 @@ $ pip install document-your-code
 
 ## Usage
 
+This is intended to work on all programming languages. Kicking off with Python as a starter (Only defualt formatting added). You can override
+the default settings for python files and extend new formats in `dyc.yaml` at your root project. Refer to [Example]() and [Advanced]()
+
+
 To run on all files in a project. Run
 
 ```sh
@@ -131,6 +135,67 @@ def hello(name):
     return "Hello " + name%
 ```
 
+
+## Advanced
+
+```sh
+$ cd myapp/
+$ touch example.py
+$ touch dyc.yaml
+```
+
+```python
+# example.py
+
+def hello(name):
+    return "Hello " + name
+```
+
+```yml
+# dyc.yaml
+
+formats:
+  - 
+    extension: 'py'
+    method:
+      indent: 'tab'
+      open: "'''"
+      close: "'''"
+      break_after_open: false
+      break_before_close: false
+    arguments:
+      title: 'My Customized Title'
+      underline: true
+      add_type: false
+      prefix: '@myAppParam'
+```
+
+```sh
+$ dyc start
+
+Processing Methods
+
+Do you want to document method hello? [y/N]: y
+
+(hello) Method docstring : Greeting Function
+
+(name) Argument docstring : Human Name
+```
+
+```vim
+## CONFIRM: MODIFY DOCSTRING BETWEEN START AND END LINES ONLY
+
+def hello(name):
+        ## START
+        '''Greeting Function
+        My Customized Title
+        -------------------
+        @myAppParam  name: Human Name'''
+        ## END
+    return "Hello " + name
+~
+
+```
 
 ## License
 
