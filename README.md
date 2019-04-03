@@ -6,6 +6,9 @@ DYC is a CLI tool that helps with documenting your source code. Answer `dyc` pro
 * Document your DIFF patch.
 * Ease of helping other developers understand your code.
 
+
+All contributions are welcome. Please follow [Development](#development) steps to get up and running, all PRs are welcome.
+
 ## Tech
 
 * [Python 2.7](https://www.python.org/download/releases/2.7/)
@@ -195,6 +198,22 @@ def hello(name):
     return "Hello " + name
 ~
 
+```
+
+
+## Development
+
+Thank you for taking the time to contribute into this project. It is simple but could be really helpful moving forward to all developers.
+
+To get started.
+
+1. Fork this repo.
+2. Clone the project.
+3. Setup virtualenv
+3. In the app folder. Run
+
+```sh
+$ pip install --editable .
 ```
 
 ## License
