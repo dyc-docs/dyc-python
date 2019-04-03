@@ -40,18 +40,18 @@ $  dyc diff
 
 |          Key              |                                                       Description                                                           | Type |
 |:---------------------:    |:-----------------------------------------------------------------------------------------------------------------------:    |------|
-|         ignore            |                                     Known method Names to be ignored from Docstrings                                        | list |
-|        keywords           |                            The necessary keyword to search for in a line the triggers actions                               | list |
-|        enabled            |                                   Determine if formatting is enabled for the extension                                      | bool |
-|         indent            |                         Indentation in a method. Limited options ['tab', '2 spaces', '4 spaces']                            | str  |
-|     indent_content        |                              Confirm if the content of a docstring has to be indented aswel                                 | bool |
-|          open             |                                             Starting opener text of a method                                                | str  |
-|         close             | Close text of a method. This could be the same as opened, but not all languages opening and closing docstrings are same     | str  |
-|    break_after_open       |                             Do we add a new line after adding the open strings of a method?                                 | bool |
-| break_after_docstring     |                                     Do we add a new line after adding the docstring?                                        | bool |
-|   break_before_close      |                                   Add a new line before closing docstrings on a method                                      | bool |
-|     words_per_line        |                                         How many words do we add per docstring?                                             | int  |
-|      within_scope         |              Should the docstring be within the scope of the method or out? Just like JS Method docstrings                  | bool |
+|         `ignore`            |                                     Known method Names to be ignored from Docstrings                                        | list |
+|        `keywords`           |                            The necessary keyword to search for in a line the triggers actions                               | list |
+|        `enabled`            |                                   Determine if formatting is enabled for the extension                                      | bool |
+|         `indent`            |                         Indentation in a method. Limited options ['tab', '2 spaces', '4 spaces']                            | str  |
+|     `indent_content`        |                              Confirm if the content of a docstring has to be indented aswel                                 | bool |
+|          `open`             |                                             Starting opener text of a method                                                | str  |
+|         `close`             | Close text of a method. This could be the same as opened, but not all languages opening and closing docstrings are same     | str  |
+|    `break_after_open`       |                             Do we add a new line after adding the open strings of a method?                                 | bool |
+| `break_after_docstring`     |                                     Do we add a new line after adding the docstring?                                        | bool |
+|   `break_before_close`      |                                   Add a new line before closing docstrings on a method                                      | bool |
+|     `words_per_line`        |                                         How many words do we add per docstring?                                             | int  |
+|      `within_scope`         |              Should the docstring be within the scope of the method or out? Just like JS Method docstrings                  | bool |
 
 
 *Arguments*
